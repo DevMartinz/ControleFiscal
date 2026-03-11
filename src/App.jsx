@@ -9,6 +9,21 @@ function App() {
   const [inputSenha, setInputSenha] = useState('');
   const [erro, setErro] = useState('');
 
+  // --- CONFIGURAÇÕES DE PERÍODO (Filtro Avançado) ---
+  const dataAtual = new Date();
+  const [periodo, setPeriodo] = useState({
+    ano: dataAtual.getFullYear().toString(),
+    mes: String(dataAtual.getMonth() + 1).padStart(2, '0')
+  });
+
+  const anosDisponiveis = ['2025', '2026', '2027'];
+  const mesesDisponiveis = [
+    { val: '01', nome: 'Janeiro' }, { val: '02', nome: 'Fevereiro' }, { val: '03', nome: 'Março' },
+    { val: '04', nome: 'Abril' }, { val: '05', nome: 'Maio' }, { val: '06', nome: 'Junho' },
+    { val: '07', nome: 'Julho' }, { val: '08', nome: 'Agosto' }, { val: '09', nome: 'Setembro' },
+    { val: '10', nome: 'Outubro' }, { val: '11', nome: 'Novembro' }, { val: '12', nome: 'Dezembro' }
+  ];
+
   const usuariosPermitidos = [
     { login: "Bruno", senha: "123", nome: "Bruno (T.I)" },
     { login: "Pedro", senha: "123", nome: "Pedro (T.I)" },
@@ -27,7 +42,6 @@ function App() {
     { nome: "MALHA", filhas: ["Check"] },
   ];
 
-  // Calcula o total de colunas (tarefas) dinamicamente
   const totalTarefasRequeridas = categorias.reduce((acc, cat) => acc + cat.filhas.length, 0);
 
   const dadosIniciais = [
@@ -43,34 +57,61 @@ function App() {
     { id: 10, nome: "CMA", pasta: "C:/Fiscal/0006-Brejinho", tarefas: {} }
   ];
 
-  const [empresas, setEmpresas] = useState(() => {
-    const salvos = localStorage.getItem('planilhaFiscalDados');
-    if (!salvos) return dadosIniciais;
-    const empresasSalvas = JSON.parse(salvos);
-    return empresasSalvas.map(emp => {
-      const infoMestra = dadosIniciais.find(d => d.id === emp.id);
-      return { ...emp, pasta: infoMestra ? infoMestra.pasta : emp.pasta };
+  // Função auxiliar para garantir que a estrutura mestra de empresas sempre seja respeitada
+  const mesclarComDadosIniciais = (dadosSalvos) => {
+    const salvosArray = typeof dadosSalvos === 'string' ? JSON.parse(dadosSalvos) : dadosSalvos;
+    return dadosIniciais.map(mestra => {
+      const empSalva = salvosArray?.find(e => e.id === mestra.id);
+      return empSalva ? { ...empSalva, pasta: mestra.pasta, nome: mestra.nome } : { ...mestra, tarefas: {} };
     });
+  };
+
+  // Estado inicial das empresas carrega o mês/ano atual
+  const [empresas, setEmpresas] = useState(() => {
+    const key = `planilhaFiscalDados_${dataAtual.getFullYear()}_${String(dataAtual.getMonth() + 1).padStart(2, '0')}`;
+    const salvos = localStorage.getItem(key);
+    return salvos ? mesclarComDadosIniciais(salvos) : dadosIniciais;
   });
 
   const [historico, setHistorico] = useState(() => JSON.parse(localStorage.getItem('planilhaFiscalHistorico')) || []);
 
-  useEffect(() => {
-    localStorage.setItem('planilhaFiscalDados', JSON.stringify(empresas));
-    localStorage.setItem('planilhaFiscalHistorico', JSON.stringify(historico));
-  }, [empresas, historico]);
+  // Lógica de mudança de período (Simula um GET na API)
+  const mudarPeriodo = (novoAno, novoMes) => {
+    setPeriodo({ ano: novoAno, mes: novoMes });
+    const key = `planilhaFiscalDados_${novoAno}_${novoMes}`;
+    const salvos = localStorage.getItem(key);
+    
+    if (salvos) {
+      setEmpresas(mesclarComDadosIniciais(salvos));
+    } else {
+      // Se for um mês novo sem dados, reseta as tarefas
+      setEmpresas(dadosIniciais.map(d => ({ ...d, tarefas: {} })));
+    }
+  };
 
   const atualizarTarefa = (empresaId, cat, sub, status) => {
     const dataLog = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     const empNome = empresas.find(e => e.id === empresaId)?.nome;
     const chave = `${cat}-${sub}`;
 
-    setHistorico(prev => [{
-      id: Date.now(), usuario: usuarioLogado, acao: status, detalhe: `${sub} - ${empNome}`, data: dataLog,
-      cor: status === 'OK' ? 'text-green-600' : status === 'NAO' ? 'text-red-600' : status === 'Verificar' ? 'text-amber-600' : status === 'Andamento' ? 'text-blue-600' : 'text-slate-500'
-    }, ...prev].slice(0, 50));
+    // Atualiza Histórico (Global)
+    setHistorico(prev => {
+      const novoHist = [{
+        id: Date.now(), usuario: usuarioLogado, acao: status, 
+        detalhe: `[${periodo.mes}/${periodo.ano}] ${sub} - ${empNome}`, // Add o período no log
+        data: dataLog,
+        cor: status === 'OK' ? 'text-green-600' : status === 'NAO' ? 'text-red-600' : status === 'Verificar' ? 'text-amber-600' : status === 'Andamento' ? 'text-blue-600' : 'text-slate-500'
+      }, ...prev].slice(0, 50);
+      localStorage.setItem('planilhaFiscalHistorico', JSON.stringify(novoHist));
+      return novoHist;
+    });
 
-    setEmpresas(prev => prev.map(e => e.id === empresaId ? { ...e, tarefas: { ...e.tarefas, [chave]: { status, user: usuarioLogado, data: dataLog } } } : e));
+    // Atualiza Empresas e salva no período específico (Simula um POST/PUT na API)
+    setEmpresas(prev => {
+      const novasEmpresas = prev.map(e => e.id === empresaId ? { ...e, tarefas: { ...e.tarefas, [chave]: { status, user: usuarioLogado, data: dataLog } } } : e);
+      localStorage.setItem(`planilhaFiscalDados_${periodo.ano}_${periodo.mes}`, JSON.stringify(novasEmpresas));
+      return novasEmpresas;
+    });
   };
 
   const getCorStatus = (status) => {
@@ -123,26 +164,46 @@ function App() {
             </div>
           ))}
         </div>
-        <button onClick={() => setHistorico([])} className="p-4 text-xs font-bold text-slate-400 hover:text-red-500 uppercase border-t border-slate-100 transition-colors">Limpar Histórico</button>
+        <button onClick={() => { setHistorico([]); localStorage.removeItem('planilhaFiscalHistorico'); }} className="p-4 text-xs font-bold text-slate-400 hover:text-red-500 uppercase border-t border-slate-100 transition-colors">Limpar Histórico</button>
       </div>
 
-      <header className="max-w-[1800px] w-full mx-auto mb-6 flex flex-col md:flex-row gap-4 justify-between md:items-center border-b pb-4">
+      <header className="max-w-[1800px] w-full mx-auto mb-6 flex flex-col lg:flex-row gap-4 justify-between lg:items-center border-b pb-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-blue-900 text-white flex items-center justify-center font-black text-xl shadow-lg uppercase">{usuarioLogado.charAt(0)}</div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Monitor Fiscal <span className="text-blue-800">v1.5</span></h1>
+            <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Monitor Fiscal <span className="text-blue-800">v2.0</span></h1>
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tighter">Rio Grande do Norte • Auditoria</p>
           </div>
         </div>
         
-        <div className="flex flex-col items-end gap-3 w-full md:w-auto">
+        <div className="flex flex-col lg:flex-row items-end lg:items-center gap-4 w-full lg:w-auto">
+          {/* FILTRO AVANÇADO DE PERÍODO */}
+          <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-lg shadow-sm">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-2">Período:</span>
+            <select 
+              value={periodo.mes} 
+              onChange={(e) => mudarPeriodo(periodo.ano, e.target.value)}
+              className="p-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500 cursor-pointer"
+            >
+              {mesesDisponiveis.map(m => <option key={m.val} value={m.val}>{m.nome}</option>)}
+            </select>
+            <select 
+              value={periodo.ano} 
+              onChange={(e) => mudarPeriodo(e.target.value, periodo.mes)}
+              className="p-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500 cursor-pointer"
+            >
+              {anosDisponiveis.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+
           <input 
             type="text" 
             placeholder="🔍 Buscar empresa..." 
-            className="w-full md:w-64 p-2 text-sm border rounded-lg bg-white outline-none focus:ring-1 focus:ring-blue-800 shadow-sm transition-all"
+            className="w-full lg:w-56 p-2 text-sm border rounded-lg bg-white outline-none focus:ring-1 focus:ring-blue-800 shadow-sm transition-all"
             value={filtro}
             onChange={e => setFiltro(e.target.value)}
           />
+          
           <div className="flex gap-4 items-center">
             <span className="text-[10px] text-slate-500 bg-white px-2 py-1 border rounded-full">Operador: <b className="text-blue-900">{usuarioLogado}</b></span>
             <button onClick={() => setMostrarHistorico(true)} className="text-xs font-bold text-blue-800 hover:text-blue-950 hover:underline uppercase">Histórico</button>
@@ -152,10 +213,14 @@ function App() {
       </header>
 
       <main className="max-w-[1800px] w-full mx-auto overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl flex-1">
-        <div className="overflow-auto max-h-[calc(100vh-250px)] scrollbar-thin scrollbar-thumb-slate-300">
+        {/* Banner indicando o período atual visualizado */}
+        <div className="bg-slate-100/50 border-b border-slate-200 p-2 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">
+          Exibindo auditoria referente a: <span className="text-blue-800">{mesesDisponiveis.find(m => m.val === periodo.mes)?.nome} de {periodo.ano}</span>
+        </div>
+
+        <div className="overflow-auto max-h-[calc(100vh-280px)] scrollbar-thin scrollbar-thumb-slate-300">
           <table className="w-full border-collapse">
             <thead>
-              {/* LINHA 1: Categorias */}
               <tr className="bg-blue-800 text-white text-[10px] uppercase tracking-wider sticky top-0 z-40 h-[34px]">
                 <th rowSpan="2" className="p-3 text-left font-bold border-r border-b border-blue-700/50 bg-blue-800 text-white sticky left-0 top-0 z-50 w-[170px]">
                   EMPRESAS
@@ -166,7 +231,6 @@ function App() {
                   </th>
                 ))}
               </tr>
-              {/* LINHA 2: Sub-filhas */}
               <tr className="bg-gray-200 text-black text-[9px] uppercase font-bold border-b border-blue-800 sticky top-[34px] z-40">
                 {categorias.map(cat => cat.filhas.map(f => (
                   <th key={`${cat.nome}-${f}`} className="p-1 border-r border-blue-600/50 bg-gray-200">
@@ -184,7 +248,6 @@ function App() {
                 </tr>
               ) : (
                 empresasFiltradas.map((emp) => {
-                  // Contagem de quantos "OK" a empresa tem para barra de progresso e validação
                   let tarefasOkCount = 0;
                   categorias.forEach(cat => cat.filhas.forEach(sub => {
                     if (emp.tarefas[`${cat.nome}-${sub}`]?.status === 'OK') tarefasOkCount++;
@@ -195,7 +258,6 @@ function App() {
 
                   return (
                     <tr key={emp.id} className={`border-b transition-all duration-300 group ${isCompleta ? 'bg-green-50 hover:bg-green-100 border-green-200' : 'border-slate-100 hover:bg-blue-50/50'}`}>
-                      {/* Primeira coluna (Nome da empresa) - Sticky - Fundo muda se estiver completa */}
                       <td className={`p-2 font-bold text-slate-700 border-r border-slate-200 sticky left-0 z-20 text-[10px] shadow-sm transition-colors duration-300 ${isCompleta ? 'bg-green-50 group-hover:bg-green-100' : 'bg-white group-hover:bg-blue-50/50'}`}>
                         <div className="flex items-center justify-between gap-2 w-full">
                           <div className="flex flex-col w-full gap-1 overflow-hidden">
@@ -203,7 +265,6 @@ function App() {
                               {isCompleta && <span className="text-green-600 text-sm leading-none" title="100% Concluído">✔</span>}
                               {emp.nome}
                             </span>
-                            {/* Barra de Progresso UX */}
                             <div className="w-full bg-slate-200 rounded-full h-1 mt-0.5" title={`${progresso}% Concluído`}>
                               <div className={`h-1 rounded-full transition-all duration-500 ${isCompleta ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${progresso}%` }}></div>
                             </div>
@@ -218,7 +279,6 @@ function App() {
                         </div>
                       </td>
 
-                      {/* Colunas das Tarefas */}
                       {categorias.map(cat => cat.filhas.map(sub => {
                         const info = emp.tarefas[`${cat.nome}-${sub}`] || { status: 'Pendente' };
                         return (
