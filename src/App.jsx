@@ -7,6 +7,7 @@ import { Header } from "./components/Header";
 import { NotificacaoSped } from "./components/NotificacaoSped";
 import { HistoricoSidebar } from "./components/HistoricoSidebar";
 import { TabelaFiscal } from "./components/TabelaFiscal";
+import { DashboardResumo } from "./components/DashboardResumo";
 
 // 2. Importando os Dados
 import {
@@ -115,6 +116,56 @@ function App() {
     });
   };
 
+  const atualizarLinha = (empresaId, status) => {
+    const dataLog = new Date().toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const empNome = empresas.find((e) => e.id === empresaId)?.nome;
+
+    setHistorico((prev) => {
+      const novoHist = [
+        {
+          id: Date.now(),
+          usuario: usuarioLogado,
+          acao: status,
+          detalhe: `[${periodo.mes}/${periodo.ano}] TODAS AS TAREFAS - ${empNome}`,
+          data: dataLog,
+          cor: status === "OK" ? "text-green-600" : "text-red-600",
+        },
+        ...prev,
+      ].slice(0, 50);
+      localStorage.setItem("planilhaFiscalHistorico", JSON.stringify(novoHist));
+      return novoHist;
+    });
+
+    setEmpresas((prev) => {
+      const novasEmpresas = prev.map((e) => {
+        if (e.id === empresaId) {
+          const novasTarefas = { ...e.tarefas };
+          categorias.forEach((cat) => {
+            cat.filhas.forEach((sub) => {
+              novasTarefas[`${cat.nome}-${sub}`] = {
+                status,
+                user: usuarioLogado,
+                data: dataLog,
+              };
+            });
+          });
+          return { ...e, tarefas: novasTarefas };
+        }
+        return e;
+      });
+      localStorage.setItem(
+        `planilhaFiscalDados_${periodo.ano}_${periodo.mes}`,
+        JSON.stringify(novasEmpresas),
+      );
+      return novasEmpresas;
+    });
+  };
+
   const processarNotificacao = (aceitou) => {
     if (aceitou && notificacao) {
       const dataLog = new Date().toLocaleString("pt-BR", {
@@ -207,13 +258,20 @@ function App() {
         onLogout={handleLogout}
       />
 
-      {/* Banner Informativo do Período */}
-      <div className="bg-slate-100/50 border-b border-slate-200 p-2 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500 max-w-[1800px] w-full mx-auto rounded-t-xl">
-        Exibindo auditoria referente a:{" "}
-        <span className="text-blue-800">
-          {mesesDisponiveis.find((m) => m.val === periodo.mes)?.nome} de{" "}
-          {periodo.ano}
-        </span>
+      <div className="bg-slate-100/80 border-b border-slate-200 p-2 max-w-[1800px] w-full mx-auto rounded-t-xl flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+          Exibindo auditoria referente a:{" "}
+          <span className="text-blue-800">
+            {mesesDisponiveis.find((m) => m.val === periodo.mes)?.nome} de{" "}
+            {periodo.ano}
+          </span>
+        </div>
+
+        <DashboardResumo
+          empresas={empresas}
+          categorias={categorias}
+          totalTarefasRequeridas={totalTarefasRequeridas}
+        />
       </div>
 
       <TabelaFiscal
@@ -222,6 +280,7 @@ function App() {
         categorias={categorias}
         totalTarefasRequeridas={totalTarefasRequeridas}
         onAtualizarTarefa={atualizarTarefa}
+        onAtualizarLinha={atualizarLinha} //
       />
 
       <footer className="py-2 text-center text-[8px] text-slate-400 uppercase tracking-widest font-bold">

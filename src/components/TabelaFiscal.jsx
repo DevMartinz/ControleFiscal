@@ -4,6 +4,7 @@ export function TabelaFiscal({
   categorias,
   totalTarefasRequeridas,
   onAtualizarTarefa,
+  onAtualizarLinha,
 }) {
   // Função que decide as cores fica aqui dentro, pois só a tabela a utiliza!
   const getCorStatus = (status) => {
@@ -118,11 +119,32 @@ export function TabelaFiscal({
                           </div>
                         </div>
 
-                        <div
-                          title={`Pasta: ${emp.pasta || "Não configurada"}`}
-                          className={`flex-shrink-0 w-3.5 h-3.5 border rounded-full flex items-center justify-center text-[9px] font-serif italic cursor-help transition-all shadow-sm ${isCompleta ? "border-green-300 text-green-600 bg-green-100 hover:bg-green-600 hover:text-white" : "border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-600 hover:text-white"}`}
-                        >
-                          i
+                        {/* Bloco da Direita: Botões e Ícone */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {/* Botões Mágicos: Aparecem apenas no Hover da linha */}
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => onAtualizarLinha(emp.id, "OK")}
+                              className="w-4 h-4 rounded bg-green-30 text-green-300 hover:bg-green-600 hover:text-white flex items-center justify-center text-[10px] shadow-sm cursor-pointer"
+                              title="Preencher tudo com OK"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => onAtualizarLinha(emp.id, "NAO")}
+                              className="w-4 h-4 rounded bg-red-30 text-red-300 hover:bg-red-600 hover:text-white flex items-center justify-center text-[10px] shadow-sm cursor-pointer"
+                              title="Preencher tudo com NÃO"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          <div
+                            title={`Pasta: ${emp.pasta || "Não configurada"}`}
+                            className={`flex-shrink-0 w-3.5 h-3.5 border rounded-full flex items-center justify-center text-[9px] font-serif italic cursor-help transition-all shadow-sm ${isCompleta ? "border-green-300 text-green-600 bg-green-100 hover:bg-green-600 hover:text-white" : "border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-600 hover:text-white"}`}
+                          >
+                            i
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -147,7 +169,7 @@ export function TabelaFiscal({
                                   e.target.value,
                                 )
                               }
-                              className={`w-full p-1 rounded text-[9px] font-bold border transition-all cursor-pointer outline-none focus:ring-1 focus:ring-blue-800 shadow-sm ${getCorStatus(info.status)}`}
+                              className={`w-full p-1 rounded text-[9px] font-bold border transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 focus:ring-offset-1 shadow-sm ${getCorStatus(info.status)}`}
                             >
                               <option value="Pendente">---</option>
                               <option value="OK">OK</option>
