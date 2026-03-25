@@ -17,10 +17,10 @@ export function DashboardResumo({
     categorias.forEach((cat) => {
       cat.filhas.forEach((sub) => {
         const status = emp.tarefas[`${cat.nome}-${sub}`]?.status;
-        if (status === "OK") {
+        if (status === "OK" || status === "NAO") {
           okCount++;
           tarefasConcluidas++;
-        } else if (status === "NAO" || status === "Verificar") {
+        } else if (status === "Verificar") {
           tarefasComAtencao++;
         }
       });
