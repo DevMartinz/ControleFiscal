@@ -12,10 +12,10 @@ export const categorias = [
   { nome: "QUEBRAS DE SEQUÊNCIA", filhas: ["NFE", "NFCE"] },
   { nome: "VERIFICAR CANCELADAS", filhas: ["NFE", "NFCE"] },
   { nome: "VERIFICAR QUANTIDADE", filhas: ["NFE", "NFCE"] },
-  { nome: "XML DAS NFE DE ENTRADA", filhas: ["Baixar", "Importar"] },
-  { nome: "FUNRURAL", filhas: ["Check"] },
-  { nome: "ENTRADA/SAÍDA", filhas: ["Check"] },
-  { nome: "MALHA", filhas: ["Check"] },
+  { nome: "XML DAS NFE DE ENTRADA", filhas: ["BAIXAR", "IMPORTAR"] },
+  { nome: "FUNRURAL", filhas: ["CHECK"] },
+  { nome: "ENTRADA/SAÍDA", filhas: ["CHECK"] },
+  { nome: "MALHA", filhas: ["CHECK"] },
 ];
 
 export const totalTarefasRequeridas = categorias.reduce(

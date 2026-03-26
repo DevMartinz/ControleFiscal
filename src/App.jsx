@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./index.css";
+import { supabase } from "./supabaseClient";
 
 // 1. Importando os Componentes (Telas e Components)
 import { Login } from "./components/Login";
@@ -12,7 +13,6 @@ import { DashboardResumo } from "./components/DashboardResumo";
 // 2. Importando os Dados
 import {
   categorias,
-  dadosIniciais,
   mesesDisponiveis,
   totalTarefasRequeridas,
 } from "./data/constants";
@@ -33,71 +33,113 @@ function App() {
     mes: String(dataAtual.getMonth() + 1).padStart(2, "0"),
   });
 
-  const mesclarComDadosIniciais = (dadosSalvos) => {
-    const salvosArray =
-      typeof dadosSalvos === "string" ? JSON.parse(dadosSalvos) : dadosSalvos;
-    return dadosIniciais.map((mestra) => {
-      const empSalva = salvosArray?.find((e) => e.id === mestra.id);
-      return empSalva
-        ? { ...empSalva, pasta: mestra.pasta, nome: mestra.nome }
-        : { ...mestra, tarefas: {} };
-    });
-  };
+  const [empresas, setEmpresas] = useState([]);
+  const [periodoId, setPeriodoId] = useState(null); // NOVO: Vai guardar o ID numérico do mês (ex: 1) que vem do banco
 
-  const [empresas, setEmpresas] = useState(() => {
-    const key = `planilhaFiscalDados_${dataAtual.getFullYear()}_${String(dataAtual.getMonth() + 1).padStart(2, "0")}`;
-    const salvos = localStorage.getItem(key);
-    return salvos ? mesclarComDadosIniciais(salvos) : dadosIniciais;
-  });
+  const [historico, setHistorico] = useState([]);
 
-  const [historico, setHistorico] = useState(
-    () => JSON.parse(localStorage.getItem("planilhaFiscalHistorico")) || [],
-  );
+  useEffect(() => {
+    const carregarDadosDoBanco = async () => {
+      // 1. Buscar TODAS as empresas ativas PRIMEIRO (Garante que a tela nunca fique vazia)
+      const { data: listaEmpresas, error: erroEmpresas } = await supabase
+        .from("enterprise")
+        .select("*")
+        .eq("active", true);
+
+      if (erroEmpresas || !listaEmpresas) {
+        console.error("Erro ao buscar empresas:", erroEmpresas);
+        return;
+      }
+
+      // 2. Tentar buscar o ID do período atual
+      const { data: periodoData } = await supabase
+        .from("period")
+        .select("id")
+        .eq("month", periodo.mes)
+        .eq("year", periodo.ano)
+        .single();
+
+      let auditoriasDaTela = [];
+
+      // 3. O período existe? Se sim, busca as tarefas preenchidas. Se não, segue com a lista vazia.
+      if (periodoData) {
+        setPeriodoId(periodoData.id);
+
+        const { data: auditorias, error: erroAuditorias } = await supabase
+          .from("audit")
+          .select(
+            `
+            *,
+            activity_type ( name, subtype ),
+            user ( login )
+          `,
+          )
+          .eq("id_period", periodoData.id);
+
+        if (!erroAuditorias && auditorias) {
+          auditoriasDaTela = auditorias;
+        }
+      } else {
+        // Mês novo! Não tem ID no banco ainda.
+        setPeriodoId(null);
+      }
+
+      // 4. O Tradutor: Junta as empresas com as auditorias (que podem estar vazias)
+      const empresasFormatadas = listaEmpresas.map((emp) => {
+        const tarefasDessaEmpresa = {};
+
+        const auditoriasDaEmpresa = auditoriasDaTela.filter(
+          (a) => a.id_enterprise === emp.id,
+        );
+
+        auditoriasDaEmpresa.forEach((aud) => {
+          if (aud.activity_type) {
+            const chave = `${aud.activity_type.name}-${aud.activity_type.subtype}`;
+            tarefasDessaEmpresa[chave] = {
+              status: aud.status,
+              user: aud.user?.login || "Sistema",
+              data: new Date(aud.date).toLocaleDateString("pt-BR"),
+            };
+          }
+        });
+
+        return {
+          ...emp,
+          nome: emp.name,
+          pasta: emp.directory,
+          tarefas: tarefasDessaEmpresa,
+        };
+      });
+
+      // 5. Exibe as empresas na tela!
+      setEmpresas(empresasFormatadas);
+    };
+
+    carregarDadosDoBanco();
+  }, [periodo.mes, periodo.ano]);
 
   // --- LÓGICA DE NEGÓCIO ---
   const mudarPeriodo = (novoAno, novoMes) => {
+    // Apenas atualizamos o estado do período.
     setPeriodo({ ano: novoAno, mes: novoMes });
-    const key = `planilhaFiscalDados_${novoAno}_${novoMes}`;
-    const salvos = localStorage.getItem(key);
-    setEmpresas(
-      salvos
-        ? mesclarComDadosIniciais(salvos)
-        : dadosIniciais.map((d) => ({ ...d, tarefas: {} })),
-    );
+
+    // Não precisamos fazer mais nada!
+    // Ao mudar esse estado, o useEffect que criamos na Etapa 3
+    // vai perceber a mudança e disparar a busca no Supabase automaticamente.
   };
 
-  const atualizarTarefa = (empresaId, cat, sub, status) => {
+  const atualizarTarefa = async (empresaId, cat, sub, status) => {
+    // 1. Atualiza a tela IMEDIATAMENTE (Visual instantâneo para o usuário)
     const dataLog = new Date().toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     });
-    const empNome = empresas.find((e) => e.id === empresaId)?.nome;
     const chave = `${cat}-${sub}`;
 
-    if (cat === "XML DAS NFE DE ENTRADA" && status === "OK") {
-      setNotificacao({ id: empresaId, nome: empNome });
-    }
-
-    setHistorico((prev) => {
-      const novoHist = [
-        {
-          id: Date.now(),
-          usuario: usuarioLogado,
-          acao: status,
-          detalhe: `[${periodo.mes}/${periodo.ano}] ${sub} - ${empNome}`,
-          data: dataLog,
-          cor: status === "OK" ? "text-green-600" : "text-slate-500",
-        },
-        ...prev,
-      ].slice(0, 50);
-      localStorage.setItem("planilhaFiscalHistorico", JSON.stringify(novoHist));
-      return novoHist;
-    });
-
-    setEmpresas((prev) => {
-      const novasEmpresas = prev.map((e) =>
+    setEmpresas((prev) =>
+      prev.map((e) =>
         e.id === empresaId
           ? {
               ...e,
@@ -107,42 +149,83 @@ function App() {
               },
             }
           : e,
-      );
-      localStorage.setItem(
-        `planilhaFiscalDados_${periodo.ano}_${periodo.mes}`,
-        JSON.stringify(novasEmpresas),
-      );
-      return novasEmpresas;
-    });
+      ),
+    );
+
+    // --- DAQUI PARA BAIXO É A CONVERSA COM O SUPABASE ---
+
+    // 2. Precisamos achar o ID numérico da tarefa clicada
+    const { data: tarefa } = await supabase
+      .from("activity_type")
+      .select("id")
+      .eq("name", cat)
+      .eq("subtype", sub)
+      .single();
+
+    if (!tarefa) {
+      console.error("Tarefa não encontrada no banco!");
+      return;
+    }
+
+    // 3. Precisamos do ID numérico do usuário (o seu estado logado tem apenas o nome em texto)
+    const { data: userDb } = await supabase
+      .from("user")
+      .select("id")
+      .eq("login", usuarioLogado)
+      .single();
+
+    if (!userDb) {
+      console.error("Usuário não encontrado no banco!");
+      return;
+    }
+
+    // 4. Lidar com o Período: Se o mês for novo, cria ele no banco na hora!
+    let currentPeriodId = periodoId;
+    if (!currentPeriodId) {
+      const { data: newPeriod, error: errPeriodo } = await supabase
+        .from("period")
+        .insert({ month: periodo.mes, year: periodo.ano })
+        .select("id")
+        .single();
+
+      if (!errPeriodo && newPeriod) {
+        currentPeriodId = newPeriod.id;
+        setPeriodoId(newPeriod.id); // Atualiza o estado global para os próximos cliques
+      } else {
+        console.error("Erro ao criar o mês no banco:", errPeriodo);
+        return;
+      }
+    }
+
+    // 5. Finalmente, salva a marcação na tabela Audit (O Upsert atualiza se já existir)
+    const { error: errAudit } = await supabase.from("audit").upsert(
+      {
+        id_enterprise: empresaId,
+        id_activity_type: tarefa.id,
+        id_period: currentPeriodId,
+        id_user: userDb.id,
+        status: status,
+        date: new Date().toISOString().split("T")[0], // Salva a data no padrão de banco de dados
+      },
+      { onConflict: "id_period, id_enterprise, id_activity_type" },
+    );
+
+    if (errAudit) {
+      console.error("Erro ao salvar a auditoria:", errAudit);
+    }
   };
 
-  const atualizarLinha = (empresaId, status) => {
+  const atualizarLinha = async (empresaId, status) => {
     const dataLog = new Date().toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     });
-    const empNome = empresas.find((e) => e.id === empresaId)?.nome;
 
-    setHistorico((prev) => {
-      const novoHist = [
-        {
-          id: Date.now(),
-          usuario: usuarioLogado,
-          acao: status,
-          detalhe: `[${periodo.mes}/${periodo.ano}] TODAS AS TAREFAS - ${empNome}`,
-          data: dataLog,
-          cor: status === "OK" ? "text-green-600" : "text-red-600",
-        },
-        ...prev,
-      ].slice(0, 50);
-      localStorage.setItem("planilhaFiscalHistorico", JSON.stringify(novoHist));
-      return novoHist;
-    });
-
-    setEmpresas((prev) => {
-      const novasEmpresas = prev.map((e) => {
+    // 1. Atualiza a tela primeiro para dar a sensação de sistema rápido (UX)
+    setEmpresas((prev) =>
+      prev.map((e) => {
         if (e.id === empresaId) {
           const novasTarefas = { ...e.tarefas };
           categorias.forEach((cat) => {
@@ -157,13 +240,65 @@ function App() {
           return { ...e, tarefas: novasTarefas };
         }
         return e;
+      }),
+    );
+
+    // --- DAQUI PARA BAIXO É A CONVERSA COM O BANCO EM MASSA ---
+
+    // 2. Busca o ID numérico do usuário
+    const { data: userDb } = await supabase
+      .from("user")
+      .select("id")
+      .eq("login", usuarioLogado)
+      .single();
+
+    if (!userDb) {
+      console.error("Usuário não encontrado!");
+      return;
+    }
+
+    // 3. Garante que o mês existe no banco (igual fizemos na outra função)
+    let currentPeriodId = periodoId;
+    if (!currentPeriodId) {
+      const { data: newPeriod } = await supabase
+        .from("period")
+        .insert({ month: periodo.mes, year: periodo.ano })
+        .select("id")
+        .single();
+
+      if (newPeriod) {
+        currentPeriodId = newPeriod.id;
+        setPeriodoId(newPeriod.id);
+      } else return;
+    }
+
+    // 4. Puxa TODOS os IDs das atividades do banco de uma vez só
+    const { data: atividades } = await supabase
+      .from("activity_type")
+      .select("id");
+
+    if (!atividades || atividades.length === 0) return;
+
+    // 5. O "Empacotador": Cria um array com todas as tarefas prontas para salvar
+    const pacoteDeTarefas = atividades.map((ativ) => ({
+      id_enterprise: empresaId,
+      id_activity_type: ativ.id,
+      id_period: currentPeriodId,
+      id_user: userDb.id,
+      status: status, // Aqui vai o "OK" ou "NAO" que você clicou
+      date: new Date().toISOString().split("T")[0],
+    }));
+
+    // 6. Envia a caixa toda de uma vez para o Supabase!
+    const { error } = await supabase
+      .from("audit")
+      .upsert(pacoteDeTarefas, {
+        onConflict: "id_period, id_enterprise, id_activity_type",
       });
-      localStorage.setItem(
-        `planilhaFiscalDados_${periodo.ano}_${periodo.mes}`,
-        JSON.stringify(novasEmpresas),
-      );
-      return novasEmpresas;
-    });
+
+    if (error) {
+      console.error("Erro ao preencher a linha em massa:", error);
+    }
   };
 
   const processarNotificacao = (aceitou) => {
