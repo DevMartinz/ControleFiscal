@@ -17,10 +17,10 @@ export function Header({
         </div>
         <div>
           <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-            Monitor Fiscal <span className="text-blue-800">v2.0</span>
+            Controle Fiscal <span className="text-blue-800"></span>
           </h1>
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tighter">
-            Rio Grande do Norte • Auditoria
+            Check-In • Sabino CGE
           </p>
         </div>
       </div>
