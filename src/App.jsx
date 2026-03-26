@@ -115,7 +115,26 @@ function App() {
       setEmpresas(empresasFormatadas);
     };
 
-    carregarDadosDoBanco();
+    // --- NOVO: LIGANDO O RADINHO REALTIME ---
+
+    // Cria um canal para escutar a tabela audit
+    const inscricaoRealtime = supabase
+      .channel("escutar-auditorias")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "audit" },
+        (payload) => {
+          console.log("📡 Mudança detectada ao vivo!", payload);
+          // Alguém mexeu no banco! Atualizamos a tela silenciosamente
+          carregarDadosDoBanco();
+        },
+      )
+      .subscribe();
+
+    // Quando o usuário sair da tela ou mudar de mês, desligamos o radinho para não travar a memória
+    return () => {
+      supabase.removeChannel(inscricaoRealtime);
+    };
   }, [periodo.mes, periodo.ano]);
 
   // --- LÓGICA DE NEGÓCIO ---
@@ -290,11 +309,9 @@ function App() {
     }));
 
     // 6. Envia a caixa toda de uma vez para o Supabase!
-    const { error } = await supabase
-      .from("audit")
-      .upsert(pacoteDeTarefas, {
-        onConflict: "id_period, id_enterprise, id_activity_type",
-      });
+    const { error } = await supabase.from("audit").upsert(pacoteDeTarefas, {
+      onConflict: "id_period, id_enterprise, id_activity_type",
+    });
 
     if (error) {
       console.error("Erro ao preencher a linha em massa:", error);
