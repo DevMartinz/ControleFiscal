@@ -39,19 +39,15 @@ function App() {
   const [historico, setHistorico] = useState([]);
 
   useEffect(() => {
+    // 1. Função que busca os dados
     const carregarDadosDoBanco = async () => {
-      // 1. Buscar TODAS as empresas ativas PRIMEIRO (Garante que a tela nunca fique vazia)
       const { data: listaEmpresas, error: erroEmpresas } = await supabase
         .from("enterprise")
         .select("*")
         .eq("active", true);
 
-      if (erroEmpresas || !listaEmpresas) {
-        console.error("Erro ao buscar empresas:", erroEmpresas);
-        return;
-      }
+      if (erroEmpresas || !listaEmpresas) return;
 
-      // 2. Tentar buscar o ID do período atual
       const { data: periodoData } = await supabase
         .from("period")
         .select("id")
@@ -61,33 +57,20 @@ function App() {
 
       let auditoriasDaTela = [];
 
-      // 3. O período existe? Se sim, busca as tarefas preenchidas. Se não, segue com a lista vazia.
       if (periodoData) {
         setPeriodoId(periodoData.id);
-
-        const { data: auditorias, error: erroAuditorias } = await supabase
+        const { data: auditorias } = await supabase
           .from("audit")
-          .select(
-            `
-            *,
-            activity_type ( name, subtype ),
-            user ( login )
-          `,
-          )
+          .select(`*, activity_type ( name, subtype ), user ( login )`)
           .eq("id_period", periodoData.id);
 
-        if (!erroAuditorias && auditorias) {
-          auditoriasDaTela = auditorias;
-        }
+        if (auditorias) auditoriasDaTela = auditorias;
       } else {
-        // Mês novo! Não tem ID no banco ainda.
         setPeriodoId(null);
       }
 
-      // 4. O Tradutor: Junta as empresas com as auditorias (que podem estar vazias)
       const empresasFormatadas = listaEmpresas.map((emp) => {
         const tarefasDessaEmpresa = {};
-
         const auditoriasDaEmpresa = auditoriasDaTela.filter(
           (a) => a.id_enterprise === emp.id,
         );
@@ -111,27 +94,26 @@ function App() {
         };
       });
 
-      // 5. Exibe as empresas na tela!
       setEmpresas(empresasFormatadas);
     };
 
-    // --- NOVO: LIGANDO O RADINHO REALTIME ---
+    // 2. Disparamos a função na hora que a tela abre
+    carregarDadosDoBanco();
 
-    // Cria um canal para escutar a tabela audit
+    // 3. Ligamos o Radinho do Realtime!
     const inscricaoRealtime = supabase
       .channel("escutar-auditorias")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "audit" },
         (payload) => {
-          console.log("📡 Mudança detectada ao vivo!", payload);
-          // Alguém mexeu no banco! Atualizamos a tela silenciosamente
-          carregarDadosDoBanco();
+          console.log("📡 Atualização em tempo real recebida!", payload); // <-- Payload aqui
+          carregarDadosDoBanco(); // Atualiza a tela silenciosamente
         },
       )
       .subscribe();
 
-    // Quando o usuário sair da tela ou mudar de mês, desligamos o radinho para não travar a memória
+    // 4. Desliga o radinho se o usuário sair da tela ou mudar o mês
     return () => {
       supabase.removeChannel(inscricaoRealtime);
     };
@@ -142,7 +124,6 @@ function App() {
     // Apenas atualizamos o estado do período.
     setPeriodo({ ano: novoAno, mes: novoMes });
 
-    // Não precisamos fazer mais nada!
     // Ao mudar esse estado, o useEffect que criamos na Etapa 3
     // vai perceber a mudança e disparar a busca no Supabase automaticamente.
   };
@@ -173,7 +154,7 @@ function App() {
 
     // --- DAQUI PARA BAIXO É A CONVERSA COM O SUPABASE ---
 
-    // 2. Precisamos achar o ID numérico da tarefa clicada
+    // 2. Acha o ID numérico da tarefa clicada
     const { data: tarefa } = await supabase
       .from("activity_type")
       .select("id")
@@ -186,7 +167,7 @@ function App() {
       return;
     }
 
-    // 3. Precisamos do ID numérico do usuário (o seu estado logado tem apenas o nome em texto)
+    // 3. ID numérico do usuário (o seu estado logado tem apenas o nome em texto)
     const { data: userDb } = await supabase
       .from("user")
       .select("id")
