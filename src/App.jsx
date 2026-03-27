@@ -34,7 +34,6 @@ function App() {
   });
 
   const [empresas, setEmpresas] = useState([]);
-  const [periodoId, setPeriodoId] = useState(null); // NOVO: Vai guardar o ID numérico do mês (ex: 1) que vem do banco
 
   const [historico, setHistorico] = useState([]);
 
@@ -48,25 +47,41 @@ function App() {
 
       if (erroEmpresas || !listaEmpresas) return;
 
+      // Array mágico: a posição 1 é Janeiro, a 3 é Março, etc. A posição 0 fica vazia.
+      const nomesDosMeses = [
+        "",
+        "Janeiro",
+        "Fevereiro",
+        "Março",
+        "Abril",
+        "Maio",
+        "Junho",
+        "Julho",
+        "Agosto",
+        "Setembro",
+        "Outubro",
+        "Novembro",
+        "Dezembro",
+      ];
+      // parseInt("03", 10) transforma o texto "03" no número 3 de verdade
+      const mesFormatado = nomesDosMeses[parseInt(periodo.mes, 10)];
+
       const { data: periodoData } = await supabase
         .from("period")
         .select("id")
-        .eq("month", periodo.mes)
+        .eq("month", mesFormatado)
         .eq("year", periodo.ano)
         .single();
 
       let auditoriasDaTela = [];
 
       if (periodoData) {
-        setPeriodoId(periodoData.id);
         const { data: auditorias } = await supabase
           .from("audit")
           .select(`*, activity_type ( name, subtype ), user ( login )`)
           .eq("id_period", periodoData.id);
 
         if (auditorias) auditoriasDaTela = auditorias;
-      } else {
-        setPeriodoId(null);
       }
 
       const empresasFormatadas = listaEmpresas.map((emp) => {
@@ -127,7 +142,49 @@ function App() {
     // Ao mudar esse estado, o useEffect que criamos na Etapa 3
     // vai perceber a mudança e disparar a busca no Supabase automaticamente.
   };
+  // --- FUNÇÃO SNIPER DE PERÍODO ---
+  const garantirPeriodoNoBanco = async () => {
+    const nomesDosMeses = [
+      "",
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
+    ];
+    const mesFormatado = nomesDosMeses[parseInt(periodo.mes, 10)];
 
+    // 1. Tenta achar o mês com o nome bonitinho
+    const { data: periodoDb } = await supabase
+      .from("period")
+      .select("id")
+      .eq("month", mesFormatado)
+      .eq("year", periodo.ano)
+      .single();
+
+    if (periodoDb) return periodoDb.id;
+
+    // 2. Se não achou, cria
+    const { data: novoPeriodo, error } = await supabase
+      .from("period")
+      .insert({ month: mesFormatado, year: periodo.ano })
+      .select("id")
+      .single();
+
+    if (novoPeriodo) {
+      return novoPeriodo.id;
+    }
+
+    console.error("Erro ao criar/buscar o período:", error);
+    return null;
+  };
   const atualizarTarefa = async (empresaId, cat, sub, status) => {
     // 1. Atualiza a tela IMEDIATAMENTE (Visual instantâneo para o usuário)
     const dataLog = new Date().toLocaleString("pt-BR", {
@@ -179,23 +236,9 @@ function App() {
       return;
     }
 
-    // 4. Lidar com o Período: Se o mês for novo, cria ele no banco na hora!
-    let currentPeriodId = periodoId;
-    if (!currentPeriodId) {
-      const { data: newPeriod, error: errPeriodo } = await supabase
-        .from("period")
-        .insert({ month: periodo.mes, year: periodo.ano })
-        .select("id")
-        .single();
-
-      if (!errPeriodo && newPeriod) {
-        currentPeriodId = newPeriod.id;
-        setPeriodoId(newPeriod.id); // Atualiza o estado global para os próximos cliques
-      } else {
-        console.error("Erro ao criar o mês no banco:", errPeriodo);
-        return;
-      }
-    }
+    // 4. Lidar com o Período: Usa a função Sniper para garantir que o mês existe
+    const currentPeriodId = await garantirPeriodoNoBanco();
+    if (!currentPeriodId) return; // Se falhar, aborta a gravação
 
     // 5. Finalmente, salva a marcação na tabela Audit (O Upsert atualiza se já existir)
     const { error: errAudit } = await supabase.from("audit").upsert(
@@ -257,20 +300,9 @@ function App() {
       return;
     }
 
-    // 3. Garante que o mês existe no banco (igual fizemos na outra função)
-    let currentPeriodId = periodoId;
-    if (!currentPeriodId) {
-      const { data: newPeriod } = await supabase
-        .from("period")
-        .insert({ month: periodo.mes, year: periodo.ano })
-        .select("id")
-        .single();
-
-      if (newPeriod) {
-        currentPeriodId = newPeriod.id;
-        setPeriodoId(newPeriod.id);
-      } else return;
-    }
+    // 3. Garante que o mês existe no banco
+    const currentPeriodId = await garantirPeriodoNoBanco();
+    if (!currentPeriodId) return; // Se falhar, aborta a gravação
 
     // 4. Puxa TODOS os IDs das atividades do banco de uma vez só
     const { data: atividades } = await supabase

@@ -1,5 +1,3 @@
-import { anosDisponiveis, mesesDisponiveis } from "../data/constants";
-
 export function Header({
   usuarioLogado,
   periodo,
@@ -9,6 +7,23 @@ export function Header({
   onAbrirHistorico,
   onLogout,
 }) {
+  // Lista exata de anos
+  const anosDisponiveis = ["2026", "2027", "2028"];
+  // Nova lista inteligente de meses
+  const mesesDisponiveis = [
+    { valor: "01", nome: "Janeiro" },
+    { valor: "02", nome: "Fevereiro" },
+    { valor: "03", nome: "Março" },
+    { valor: "04", nome: "Abril" },
+    { valor: "05", nome: "Maio" },
+    { valor: "06", nome: "Junho" },
+    { valor: "07", nome: "Julho" },
+    { valor: "08", nome: "Agosto" },
+    { valor: "09", nome: "Setembro" },
+    { valor: "10", nome: "Outubro" },
+    { valor: "11", nome: "Novembro" },
+    { valor: "12", nome: "Dezembro" },
+  ];
   return (
     <header className="max-w-[1800px] w-full mx-auto mb-6 flex flex-col lg:flex-row gap-4 justify-between lg:items-center border-b pb-4">
       <div className="flex items-center gap-4">
@@ -34,22 +49,22 @@ export function Header({
           <select
             value={periodo.mes}
             onChange={(e) => mudarPeriodo(periodo.ano, e.target.value)}
-            className="p-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500 cursor-pointer"
+            className="p-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white shadow-sm outline-none focus:ring-2 focus:ring-blue-600 transition-all font-bold cursor-pointer"
           >
-            {mesesDisponiveis.map((m) => (
-              <option key={m.val} value={m.val}>
-                {m.nome}
+            {mesesDisponiveis.map((mes) => (
+              <option key={mes.valor} value={mes.valor}>
+                {mes.nome}
               </option>
             ))}
           </select>
           <select
             value={periodo.ano}
             onChange={(e) => mudarPeriodo(e.target.value, periodo.mes)}
-            className="p-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500 cursor-pointer"
+            className="p-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white shadow-sm outline-none focus:ring-2 focus:ring-blue-600 transition-all font-bold cursor-pointer"
           >
-            {anosDisponiveis.map((a) => (
-              <option key={a} value={a}>
-                {a}
+            {anosDisponiveis.map((ano) => (
+              <option key={ano} value={ano}>
+                {ano}
               </option>
             ))}
           </select>
