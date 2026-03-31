@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./index.css";
 import { supabase } from "./supabaseClient";
 
@@ -22,11 +22,20 @@ function App() {
   const [usuarioLogado, setUsuarioLogado] = useState(
     () => localStorage.getItem("usuarioLogado") || null,
   );
-  const [filtro, setFiltro] = useState("");
+
+  const [filtroTela, setFiltroTela] = useState("");
+  const [filtroValido, setFiltroValido] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFiltroValido(filtroTela);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [filtroTela]);
+
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [notificacao, setNotificacao] = useState(null);
 
-  // --- CONFIGURAÇÕES DE PERÍODO ---
   const dataAtual = new Date();
   const [periodo, setPeriodo] = useState({
     ano: dataAtual.getFullYear().toString(),
@@ -35,19 +44,20 @@ function App() {
 
   const [empresas, setEmpresas] = useState([]);
 
+  // Histórico agora começa vazio, ele será preenchido direto do Banco de Dados!
   const [historico, setHistorico] = useState([]);
 
   useEffect(() => {
-    // 1. Função que busca os dados
     const carregarDadosDoBanco = async () => {
       const { data: listaEmpresas, error: erroEmpresas } = await supabase
         .from("enterprise")
         .select("*")
-        .eq("active", true);
+        .eq("active", true)
+        .order("grupo_ordem", { ascending: true })
+        .order("sigla", { ascending: true });
 
       if (erroEmpresas || !listaEmpresas) return;
 
-      // Array mágico: a posição 1 é Janeiro, a 3 é Março, etc. A posição 0 fica vazia.
       const nomesDosMeses = [
         "",
         "Janeiro",
@@ -63,7 +73,6 @@ function App() {
         "Novembro",
         "Dezembro",
       ];
-      // parseInt("03", 10) transforma o texto "03" no número 3 de verdade
       const mesFormatado = nomesDosMeses[parseInt(periodo.mes, 10)];
 
       const { data: periodoData } = await supabase
@@ -84,6 +93,7 @@ function App() {
         if (auditorias) auditoriasDaTela = auditorias;
       }
 
+      // 1. FORMATAÇÃO DAS EMPRESAS PARA A TABELA
       const empresasFormatadas = listaEmpresas.map((emp) => {
         const tarefasDessaEmpresa = {};
         const auditoriasDaEmpresa = auditoriasDaTela.filter(
@@ -96,54 +106,105 @@ function App() {
             tarefasDessaEmpresa[chave] = {
               status: aud.status,
               user: aud.user?.login || "Sistema",
-              data: new Date(aud.date).toLocaleDateString("pt-BR"),
+              data: new Date(aud.created_at || aud.date).toLocaleDateString(
+                "pt-BR",
+              ),
             };
           }
         });
 
         return {
           ...emp,
-          nome: emp.name,
+          nome: emp.sigla || emp.name,
+          grupoNome: emp.grupo_nome,
           pasta: emp.directory,
           tarefas: tarefasDessaEmpresa,
         };
       });
 
       setEmpresas(empresasFormatadas);
+
+      // 2. FORMATAÇÃO DA AUDITORIA PARA O HISTÓRICO LATERAL GLOBAL
+      const historicoGlobal = auditoriasDaTela.map((aud) => {
+        const emp = listaEmpresas.find((e) => e.id === aud.id_enterprise);
+        const cat = aud.activity_type?.name || "Desconhecido";
+        const sub = aud.activity_type?.subtype || "Tarefa";
+        const status = aud.status;
+
+        // VALIDAÇÃO BLINDADA DE DATA/HORA
+        // Verifica se a tabela tem 'created_at', se não tiver usa 'date', se falhar usa a data atual como último recurso.
+        let dataCriacao;
+        try {
+          const rawDate = aud.created_at || aud.date;
+          dataCriacao = rawDate ? new Date(rawDate) : new Date();
+          // Verifica se o objeto Date é válido
+          if (isNaN(dataCriacao.getTime())) throw new Error("Data Inválida");
+        } catch (e) {
+          dataCriacao = new Date();
+        }
+
+        let corFundo = "bg-slate-500";
+        let corBadge = "bg-slate-50 text-slate-600";
+
+        if (status === "OK") {
+          corFundo = "bg-green-500";
+          corBadge = "bg-green-100 text-green-700";
+        } else if (status === "NAO") {
+          corFundo = "bg-red-500";
+          corBadge = "bg-red-100 text-red-700";
+        } else if (status === "Andamento") {
+          corFundo = "bg-sky-500";
+          corBadge = "bg-sky-100 text-sky-700";
+        } else if (status === "Verificar") {
+          corFundo = "bg-amber-500";
+          corBadge = "bg-amber-100 text-amber-700";
+        }
+
+        return {
+          id: aud.id || crypto.randomUUID(),
+          usuario: aud.user?.login || "Sistema",
+          data: dataCriacao.toLocaleDateString("pt-BR"),
+          // O fallback "00:00" previne erros se a hora vier vazia do banco
+          hora:
+            dataCriacao.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }) || "00:00",
+          acao: status,
+          detalhe: `${cat}: ${sub} ➔ ${emp?.nome || emp?.sigla || "Empresa"}`,
+          corFundo,
+          corBadge,
+          timestamp: dataCriacao.getTime(),
+        };
+      });
+
+      historicoGlobal.sort((a, b) => b.timestamp - a.timestamp);
+      setHistorico(historicoGlobal);
     };
 
-    // 2. Disparamos a função na hora que a tela abre
     carregarDadosDoBanco();
 
-    // 3. Ligamos o Radinho do Realtime!
     const inscricaoRealtime = supabase
       .channel("escutar-auditorias")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "audit" },
-        (payload) => {
-          console.log("📡 Atualização em tempo real recebida!", payload); // <-- Payload aqui
-          carregarDadosDoBanco(); // Atualiza a tela silenciosamente
+        () => {
+          carregarDadosDoBanco();
         },
       )
       .subscribe();
 
-    // 4. Desliga o radinho se o usuário sair da tela ou mudar o mês
     return () => {
       supabase.removeChannel(inscricaoRealtime);
     };
   }, [periodo.mes, periodo.ano]);
 
-  // --- LÓGICA DE NEGÓCIO ---
   const mudarPeriodo = (novoAno, novoMes) => {
-    // Apenas atualizamos o estado do período.
     setPeriodo({ ano: novoAno, mes: novoMes });
-
-    // Ao mudar esse estado, o useEffect que criamos na Etapa 3
-    // vai perceber a mudança e disparar a busca no Supabase automaticamente.
   };
-  // --- FUNÇÃO SNIPER DE PERÍODO ---
-  const garantirPeriodoNoBanco = async () => {
+
+  const garantirPeriodoNoBanco = useCallback(async () => {
     const nomesDosMeses = [
       "",
       "Janeiro",
@@ -161,7 +222,6 @@ function App() {
     ];
     const mesFormatado = nomesDosMeses[parseInt(periodo.mes, 10)];
 
-    // 1. Tenta achar o mês com o nome bonitinho
     const { data: periodoDb } = await supabase
       .from("period")
       .select("id")
@@ -171,7 +231,6 @@ function App() {
 
     if (periodoDb) return periodoDb.id;
 
-    // 2. Se não achou, cria
     const { data: novoPeriodo, error } = await supabase
       .from("period")
       .insert({ month: mesFormatado, year: periodo.ano })
@@ -184,152 +243,127 @@ function App() {
 
     console.error("Erro ao criar/buscar o período:", error);
     return null;
-  };
-  const atualizarTarefa = async (empresaId, cat, sub, status) => {
-    // 1. Atualiza a tela IMEDIATAMENTE (Visual instantâneo para o usuário)
-    const dataLog = new Date().toLocaleString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const chave = `${cat}-${sub}`;
+  }, [periodo.ano, periodo.mes]);
 
-    setEmpresas((prev) =>
-      prev.map((e) =>
-        e.id === empresaId
-          ? {
-              ...e,
-              tarefas: {
-                ...e.tarefas,
-                [chave]: { status, user: usuarioLogado, data: dataLog },
-              },
-            }
-          : e,
-      ),
-    );
+  const atualizarTarefa = useCallback(
+    async (empresaId, cat, sub, status) => {
+      const dataLog = new Date().toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const chave = `${cat}-${sub}`;
 
-    // --- DAQUI PARA BAIXO É A CONVERSA COM O SUPABASE ---
+      setEmpresas((prev) =>
+        prev.map((e) =>
+          e.id === empresaId
+            ? {
+                ...e,
+                tarefas: {
+                  ...e.tarefas,
+                  [chave]: { status, user: usuarioLogado, data: dataLog },
+                },
+              }
+            : e,
+        ),
+      );
 
-    // 2. Acha o ID numérico da tarefa clicada
-    const { data: tarefa } = await supabase
-      .from("activity_type")
-      .select("id")
-      .eq("name", cat)
-      .eq("subtype", sub)
-      .single();
+      const { data: tarefa } = await supabase
+        .from("activity_type")
+        .select("id")
+        .eq("name", cat)
+        .eq("subtype", sub)
+        .single();
 
-    if (!tarefa) {
-      console.error("Tarefa não encontrada no banco!");
-      return;
-    }
+      if (!tarefa) return;
 
-    // 3. ID numérico do usuário (o seu estado logado tem apenas o nome em texto)
-    const { data: userDb } = await supabase
-      .from("user")
-      .select("id")
-      .eq("login", usuarioLogado)
-      .single();
+      const { data: userDb } = await supabase
+        .from("user")
+        .select("id")
+        .eq("login", usuarioLogado)
+        .single();
 
-    if (!userDb) {
-      console.error("Usuário não encontrado no banco!");
-      return;
-    }
+      if (!userDb) return;
 
-    // 4. Lidar com o Período: Usa a função Sniper para garantir que o mês existe
-    const currentPeriodId = await garantirPeriodoNoBanco();
-    if (!currentPeriodId) return; // Se falhar, aborta a gravação
+      const currentPeriodId = await garantirPeriodoNoBanco();
+      if (!currentPeriodId) return;
 
-    // 5. Finalmente, salva a marcação na tabela Audit (O Upsert atualiza se já existir)
-    const { error: errAudit } = await supabase.from("audit").upsert(
-      {
+      await supabase.from("audit").upsert(
+        {
+          id_enterprise: empresaId,
+          id_activity_type: tarefa.id,
+          id_period: currentPeriodId,
+          id_user: userDb.id,
+          status: status,
+          date: new Date().toISOString().split("T")[0],
+        },
+        { onConflict: "id_period, id_enterprise, id_activity_type" },
+      );
+    },
+    [usuarioLogado, garantirPeriodoNoBanco],
+  );
+
+  const atualizarLinha = useCallback(
+    async (empresaId, status) => {
+      const dataLog = new Date().toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      setEmpresas((prev) =>
+        prev.map((e) => {
+          if (e.id === empresaId) {
+            const novasTarefas = { ...e.tarefas };
+            categorias.forEach((cat) => {
+              cat.filhas.forEach((sub) => {
+                novasTarefas[`${cat.nome}-${sub}`] = {
+                  status,
+                  user: usuarioLogado,
+                  data: dataLog,
+                };
+              });
+            });
+            return { ...e, tarefas: novasTarefas };
+          }
+          return e;
+        }),
+      );
+
+      const { data: userDb } = await supabase
+        .from("user")
+        .select("id")
+        .eq("login", usuarioLogado)
+        .single();
+
+      if (!userDb) return;
+
+      const currentPeriodId = await garantirPeriodoNoBanco();
+      if (!currentPeriodId) return;
+
+      const { data: atividades } = await supabase
+        .from("activity_type")
+        .select("id");
+
+      if (!atividades || atividades.length === 0) return;
+
+      const pacoteDeTarefas = atividades.map((ativ) => ({
         id_enterprise: empresaId,
-        id_activity_type: tarefa.id,
+        id_activity_type: ativ.id,
         id_period: currentPeriodId,
         id_user: userDb.id,
         status: status,
-        date: new Date().toISOString().split("T")[0], // Salva a data no padrão de banco de dados
-      },
-      { onConflict: "id_period, id_enterprise, id_activity_type" },
-    );
+        date: new Date().toISOString().split("T")[0],
+      }));
 
-    if (errAudit) {
-      console.error("Erro ao salvar a auditoria:", errAudit);
-    }
-  };
-
-  const atualizarLinha = async (empresaId, status) => {
-    const dataLog = new Date().toLocaleString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    // 1. Atualiza a tela primeiro para dar a sensação de sistema rápido (UX)
-    setEmpresas((prev) =>
-      prev.map((e) => {
-        if (e.id === empresaId) {
-          const novasTarefas = { ...e.tarefas };
-          categorias.forEach((cat) => {
-            cat.filhas.forEach((sub) => {
-              novasTarefas[`${cat.nome}-${sub}`] = {
-                status,
-                user: usuarioLogado,
-                data: dataLog,
-              };
-            });
-          });
-          return { ...e, tarefas: novasTarefas };
-        }
-        return e;
-      }),
-    );
-
-    // --- DAQUI PARA BAIXO É A CONVERSA COM O BANCO EM MASSA ---
-
-    // 2. Busca o ID numérico do usuário
-    const { data: userDb } = await supabase
-      .from("user")
-      .select("id")
-      .eq("login", usuarioLogado)
-      .single();
-
-    if (!userDb) {
-      console.error("Usuário não encontrado!");
-      return;
-    }
-
-    // 3. Garante que o mês existe no banco
-    const currentPeriodId = await garantirPeriodoNoBanco();
-    if (!currentPeriodId) return; // Se falhar, aborta a gravação
-
-    // 4. Puxa TODOS os IDs das atividades do banco de uma vez só
-    const { data: atividades } = await supabase
-      .from("activity_type")
-      .select("id");
-
-    if (!atividades || atividades.length === 0) return;
-
-    // 5. O "Empacotador": Cria um array com todas as tarefas prontas para salvar
-    const pacoteDeTarefas = atividades.map((ativ) => ({
-      id_enterprise: empresaId,
-      id_activity_type: ativ.id,
-      id_period: currentPeriodId,
-      id_user: userDb.id,
-      status: status, // Aqui vai o "OK" ou "NAO" que você clicou
-      date: new Date().toISOString().split("T")[0],
-    }));
-
-    // 6. Envia a caixa toda de uma vez para o Supabase!
-    const { error } = await supabase.from("audit").upsert(pacoteDeTarefas, {
-      onConflict: "id_period, id_enterprise, id_activity_type",
-    });
-
-    if (error) {
-      console.error("Erro ao preencher a linha em massa:", error);
-    }
-  };
+      await supabase.from("audit").upsert(pacoteDeTarefas, {
+        onConflict: "id_period, id_enterprise, id_activity_type",
+      });
+    },
+    [usuarioLogado, garantirPeriodoNoBanco],
+  );
 
   const processarNotificacao = (aceitou) => {
     if (aceitou && notificacao) {
@@ -340,7 +374,7 @@ function App() {
         minute: "2-digit",
       });
       setEmpresas((prev) => {
-        const novasEmpresas = prev.map((e) =>
+        return prev.map((e) =>
           e.id === notificacao.id
             ? {
                 ...e,
@@ -370,11 +404,6 @@ function App() {
               }
             : e,
         );
-        localStorage.setItem(
-          `planilhaFiscalDados_${periodo.ano}_${periodo.mes}`,
-          JSON.stringify(novasEmpresas),
-        );
-        return novasEmpresas;
       });
     }
     setNotificacao(null);
@@ -390,7 +419,6 @@ function App() {
     localStorage.removeItem("usuarioLogado");
   };
 
-  // --- RENDERIZAÇÃO ---
   if (!usuarioLogado) {
     return <Login onLogin={handleLoginSuccess} />;
   }
@@ -403,22 +431,19 @@ function App() {
         onRecusar={() => processarNotificacao(false)}
       />
 
+      {/* A propriedade onLimpar foi removida daqui! */}
       <HistoricoSidebar
         mostrar={mostrarHistorico}
         historico={historico}
         onFechar={() => setMostrarHistorico(false)}
-        onLimpar={() => {
-          setHistorico([]);
-          localStorage.removeItem("planilhaFiscalHistorico");
-        }}
       />
 
       <Header
         usuarioLogado={usuarioLogado}
         periodo={periodo}
         mudarPeriodo={mudarPeriodo}
-        filtro={filtro}
-        setFiltro={setFiltro}
+        filtro={filtroTela}
+        setFiltro={setFiltroTela}
         onAbrirHistorico={() => setMostrarHistorico(true)}
         onLogout={handleLogout}
       />
@@ -427,8 +452,9 @@ function App() {
         <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
           Exibindo check-in referente a:{" "}
           <span className="text-blue-800">
-            {mesesDisponiveis.find((m) => m.val === periodo.mes)?.nome} de{" "}
-            {periodo.ano}
+            {mesesDisponiveis?.find((m) => m.val === periodo.mes)?.nome ||
+              periodo.mes}{" "}
+            de {periodo.ano}
           </span>
         </div>
 
@@ -441,11 +467,11 @@ function App() {
 
       <TabelaFiscal
         empresas={empresas}
-        filtro={filtro}
+        filtro={filtroValido}
         categorias={categorias}
         totalTarefasRequeridas={totalTarefasRequeridas}
         onAtualizarTarefa={atualizarTarefa}
-        onAtualizarLinha={atualizarLinha} //
+        onAtualizarLinha={atualizarLinha}
       />
 
       <footer className="py-2 text-center text-[8px] text-slate-400 uppercase tracking-widest font-bold">
