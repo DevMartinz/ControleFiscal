@@ -37,6 +37,7 @@ function App() {
 
   const [empresas, setEmpresas] = useState([]);
   const [historico, setHistorico] = useState([]);
+  const [carregando, setCarregando] = useState(true);
 
   // --- 🌙 NOVO MOTOR DE 3 TEMAS ---
   const [tema, setTema] = useState(
@@ -72,6 +73,7 @@ function App() {
 
   useEffect(() => {
     const carregarDadosDoBanco = async () => {
+      setCarregando(true);
       const { data: listaEmpresas, error: erroEmpresas } = await supabase
         .from("enterprise")
         .select("*")
@@ -197,6 +199,7 @@ function App() {
 
       historicoGlobal.sort((a, b) => b.timestamp - a.timestamp);
       setHistorico(historicoGlobal);
+      setCarregando(false);
     };
 
     carregarDadosDoBanco();
@@ -488,6 +491,7 @@ function App() {
         onAtualizarTarefa={atualizarTarefa}
         onAtualizarLinha={atualizarLinha}
         tema={tema}
+        carregando={carregando}
       />
 
       <footer className="py-2 mt-4 text-center text-[8px] text-slate-500 uppercase tracking-widest font-bold">

@@ -44,15 +44,15 @@ const LinhaDaTabela = React.memo(
     totalTarefasRequeridas,
     onAtualizarTarefa,
     onAtualizarLinha,
-    tema, // Recebendo o tema do App.jsx
+    tema,
   }) => {
     const [semMovimentos, setSemMovimentos] = useState(false);
 
     let tarefasOkCount = 0;
     categorias.forEach((cat) =>
       cat.filhas.forEach((sub) => {
-        if (emp.tarefas[`${cat.nome}-${sub}`]?.status === "OK")
-          tarefasOkCount++;
+        const status = emp.tarefas[`${cat.nome}-${sub}`]?.status;
+        if (status === "OK" || status === "NAO") tarefasOkCount++;
       }),
     );
 
@@ -391,15 +391,19 @@ const LinhaDaTabela = React.memo(
               return (
                 <td
                   key={`${cat.nome}-${sub}`}
-                  title={`${cat.nome}: ${sub} ➔ ${emp.nome}`}
-                  className={`p-0.5 border-r ${borderCelula} text-center relative z-0 ${hoverCelula} transition-all cursor-crosshair`}
+                  className={`p-0.5 border-r ${borderCelula} text-center relative z-0 ${hoverCelula} transition-all cursor-crosshair group/tooltip`}
                 >
+                  {/* TOOLTIP CUSTOMIZADO COM ATRASO */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1.5 bg-slate-800 dark:bg-black text-white text-[10px] font-bold rounded opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all delay-0 group-hover/tooltip:delay-[3000ms] pointer-events-none z-50 whitespace-nowrap shadow-xl border border-slate-700">
+                    {cat.nome}: {sub} ➔ {emp.nome}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800 dark:border-t-black"></div>
+                  </div>
+
                   <select
                     value={info.status}
                     onChange={(e) =>
                       onAtualizarTarefa(emp.id, cat.nome, sub, e.target.value)
                     }
-                    // A classe cursor-crosshair agora força a mira até por cima do select
                     className={`w-full p-0.5 rounded text-[8px] font-bold border-none appearance-none cursor-crosshair outline-none focus:ring-1 focus:ring-blue-400 text-center ${getCorStatus(info.status, tema)}`}
                   >
                     <option
@@ -472,7 +476,7 @@ const LinhaDaTabela = React.memo(
       prevProps.emp === nextProps.emp &&
       prevProps.isPrimeiraDoGrupo === nextProps.isPrimeiraDoGrupo &&
       prevProps.rowSpanGrupo === nextProps.rowSpanGrupo &&
-      prevProps.tema === nextProps.tema // Re-renderiza a linha se o tema mudar
+      prevProps.tema === nextProps.tema
     );
   },
 );
@@ -485,6 +489,7 @@ export function TabelaFiscal({
   onAtualizarTarefa,
   onAtualizarLinha,
   tema = "light",
+  carregando,
 }) {
   const empresasFiltradas = useMemo(() => {
     const termo = filtro.toLowerCase().trim();
@@ -582,7 +587,29 @@ export function TabelaFiscal({
           </thead>
 
           <tbody>
-            {empresasFiltradas.length === 0 ? (
+            {carregando ? (
+              // UX DE CARREGAMENTO PREMIUM
+              <tr>
+                <td colSpan={totalTarefasRequeridas + 2} className="p-20">
+                  <div className="flex flex-col items-center justify-center w-full h-full gap-5 animate-pulse">
+                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                    <div className="flex flex-col items-center">
+                      <span
+                        className={`font-black text-sm tracking-widest uppercase ${tema === "light" ? "text-slate-600" : "text-slate-300"}`}
+                      >
+                        Sincronizando Base de Dados
+                      </span>
+                      <span
+                        className={`text-[10px] mt-1 font-bold uppercase tracking-widest ${tema === "light" ? "text-slate-400" : "text-slate-500"}`}
+                      >
+                        Buscando empresas, tarefas e histórico...
+                      </span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ) : empresasFiltradas.length === 0 ? (
+              // CASO NÃO ENCONTRE NADA NA BUSCA
               <tr>
                 <td
                   colSpan={totalTarefasRequeridas + 2}
@@ -592,6 +619,7 @@ export function TabelaFiscal({
                 </td>
               </tr>
             ) : (
+              // RENDERIZAÇÃO NORMAL DAS EMPRESAS
               empresasFiltradas.map((emp, index) => {
                 const grupo = emp.grupoNome || "OUTROS";
                 const grupoAnterior =
@@ -612,7 +640,7 @@ export function TabelaFiscal({
                     totalTarefasRequeridas={totalTarefasRequeridas}
                     onAtualizarTarefa={onAtualizarTarefa}
                     onAtualizarLinha={onAtualizarLinha}
-                    tema={tema} // Repassando o tema para cada linha
+                    tema={tema}
                   />
                 );
               })
