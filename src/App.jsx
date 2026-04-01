@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import "./index.css";
 import { supabase } from "./supabaseClient";
 
-// 1. Importando os Componentes (Telas e Components)
 import { Login } from "./components/Login";
 import { Header } from "./components/Header";
 import { NotificacaoSped } from "./components/NotificacaoSped";
@@ -10,15 +9,9 @@ import { HistoricoSidebar } from "./components/HistoricoSidebar";
 import { TabelaFiscal } from "./components/TabelaFiscal";
 import { DashboardResumo } from "./components/DashboardResumo";
 
-// 2. Importando os Dados
-import {
-  categorias,
-  mesesDisponiveis,
-  totalTarefasRequeridas,
-} from "./data/constants";
+import { categorias, totalTarefasRequeridas } from "./data/constants";
 
 function App() {
-  // --- ESTADOS GERAIS ---
   const [usuarioLogado, setUsuarioLogado] = useState(
     () => localStorage.getItem("usuarioLogado") || null,
   );
@@ -43,9 +36,39 @@ function App() {
   });
 
   const [empresas, setEmpresas] = useState([]);
-
-  // Histórico agora começa vazio, ele será preenchido direto do Banco de Dados!
   const [historico, setHistorico] = useState([]);
+
+  // --- 🌙 NOVO MOTOR DE 3 TEMAS ---
+  const [tema, setTema] = useState(
+    () => localStorage.getItem("temaSistema") || "light",
+  );
+
+  useEffect(() => {
+    const htmlTag = document.documentElement;
+    // Remove classes antigas
+    htmlTag.classList.remove("light", "dark", "black");
+    // Adiciona o tema atual (útil para customizações CSS manuais)
+    htmlTag.classList.add(tema);
+
+    // Se for um dos modos escuros, avisa o tailwind nativo
+    if (tema === "dark" || tema === "black") {
+      htmlTag.classList.add("dark");
+    }
+    localStorage.setItem("temaSistema", tema);
+  }, [tema]);
+
+  const ciclarTema = () => {
+    if (tema === "light") setTema("dark");
+    else if (tema === "dark") setTema("black");
+    else setTema("light");
+  };
+
+  const estilosFundoBase = {
+    light: "bg-slate-50",
+    dark: "bg-slate-900",
+    black: "bg-black",
+  };
+  // --------------------------------
 
   useEffect(() => {
     const carregarDadosDoBanco = async () => {
@@ -93,7 +116,6 @@ function App() {
         if (auditorias) auditoriasDaTela = auditorias;
       }
 
-      // 1. FORMATAÇÃO DAS EMPRESAS PARA A TABELA
       const empresasFormatadas = listaEmpresas.map((emp) => {
         const tarefasDessaEmpresa = {};
         const auditoriasDaEmpresa = auditoriasDaTela.filter(
@@ -124,20 +146,16 @@ function App() {
 
       setEmpresas(empresasFormatadas);
 
-      // 2. FORMATAÇÃO DA AUDITORIA PARA O HISTÓRICO LATERAL GLOBAL
       const historicoGlobal = auditoriasDaTela.map((aud) => {
         const emp = listaEmpresas.find((e) => e.id === aud.id_enterprise);
         const cat = aud.activity_type?.name || "Desconhecido";
         const sub = aud.activity_type?.subtype || "Tarefa";
         const status = aud.status;
 
-        // VALIDAÇÃO BLINDADA DE DATA/HORA
-        // Verifica se a tabela tem 'created_at', se não tiver usa 'date', se falhar usa a data atual como último recurso.
         let dataCriacao;
         try {
           const rawDate = aud.created_at || aud.date;
           dataCriacao = rawDate ? new Date(rawDate) : new Date();
-          // Verifica se o objeto Date é válido
           if (isNaN(dataCriacao.getTime())) throw new Error("Data Inválida");
         } catch (e) {
           dataCriacao = new Date();
@@ -164,7 +182,6 @@ function App() {
           id: aud.id || crypto.randomUUID(),
           usuario: aud.user?.login || "Sistema",
           data: dataCriacao.toLocaleDateString("pt-BR"),
-          // O fallback "00:00" previne erros se a hora vier vazia do banco
           hora:
             dataCriacao.toLocaleTimeString("pt-BR", {
               hour: "2-digit",
@@ -424,20 +441,23 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 relative font-sans flex flex-col overflow-hidden">
+    // Fundo global controlado pelo dicionário
+    <div
+      className={`min-h-screen ${estilosFundoBase[tema]} transition-colors duration-300 p-4 relative font-sans flex flex-col overflow-hidden`}
+    >
       <NotificacaoSped
         dados={notificacao}
         onAceitar={() => processarNotificacao(true)}
         onRecusar={() => processarNotificacao(false)}
       />
 
-      {/* A propriedade onLimpar foi removida daqui! */}
       <HistoricoSidebar
         mostrar={mostrarHistorico}
         historico={historico}
         onFechar={() => setMostrarHistorico(false)}
       />
 
+      {/* Header recebendo a mecânica de tema */}
       <Header
         usuarioLogado={usuarioLogado}
         periodo={periodo}
@@ -446,22 +466,17 @@ function App() {
         setFiltro={setFiltroTela}
         onAbrirHistorico={() => setMostrarHistorico(true)}
         onLogout={handleLogout}
+        tema={tema}
+        onCiclarTema={ciclarTema}
       />
 
-      <div className="bg-slate-100/80 border-b border-slate-200 p-2 max-w-[1800px] w-full mx-auto rounded-t-xl flex flex-col sm:flex-row justify-between items-center gap-3">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-          Exibindo check-in referente a:{" "}
-          <span className="text-blue-800">
-            {mesesDisponiveis?.find((m) => m.val === periodo.mes)?.nome ||
-              periodo.mes}{" "}
-            de {periodo.ano}
-          </span>
-        </div>
-
+      <div className="max-w-[1920px] w-full mx-auto flex justify-center items-center mb-6 mt-4 px-4 sm:px-6">
+        {/* Dashboard recebendo a cor do tema */}
         <DashboardResumo
           empresas={empresas}
           categorias={categorias}
           totalTarefasRequeridas={totalTarefasRequeridas}
+          tema={tema}
         />
       </div>
 
@@ -472,9 +487,10 @@ function App() {
         totalTarefasRequeridas={totalTarefasRequeridas}
         onAtualizarTarefa={atualizarTarefa}
         onAtualizarLinha={atualizarLinha}
+        tema={tema}
       />
 
-      <footer className="py-2 text-center text-[8px] text-slate-400 uppercase tracking-widest font-bold">
+      <footer className="py-2 mt-4 text-center text-[8px] text-slate-500 uppercase tracking-widest font-bold">
         SABINO CGE - @DevMartinz
       </footer>
     </div>

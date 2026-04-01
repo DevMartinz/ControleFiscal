@@ -1,16 +1,29 @@
 import React, { useMemo, useState } from "react";
 
-const getCorStatus = (status) => {
-  if (status === "OK")
-    return "bg-green-100 text-green-800 font-bold hover:bg-green-200";
-  if (status === "NAO")
-    return "bg-red-100 text-red-800 font-bold hover:bg-red-200";
-  if (status === "Verificar")
-    return "bg-amber-100 text-amber-800 font-bold hover:bg-amber-200";
-  if (status === "Andamento")
-    return "bg-sky-100 text-sky-800 font-bold hover:bg-sky-200";
-
-  return "bg-transparent text-slate-500 font-medium hover:bg-slate-300 transition-colors";
+// Motor de Cores adaptado aos Temas
+const getCorStatus = (status, tema) => {
+  if (tema === "light") {
+    if (status === "OK")
+      return "bg-green-100 text-green-800 font-bold hover:bg-green-200";
+    if (status === "NAO")
+      return "bg-red-100 text-red-800 font-bold hover:bg-red-200";
+    if (status === "Verificar")
+      return "bg-amber-100 text-amber-800 font-bold hover:bg-amber-200";
+    if (status === "Andamento")
+      return "bg-sky-100 text-sky-800 font-bold hover:bg-sky-200";
+    return "bg-transparent text-slate-500 font-medium hover:bg-slate-300 transition-colors";
+  } else {
+    // Cores modo Dark/Black (Fundo translúcido e texto brilhante)
+    if (status === "OK")
+      return "bg-emerald-900/40 text-emerald-400 font-bold hover:bg-emerald-800/60";
+    if (status === "NAO")
+      return "bg-rose-900/40 text-rose-400 font-bold hover:bg-rose-800/60";
+    if (status === "Verificar")
+      return "bg-amber-900/40 text-amber-400 font-bold hover:bg-amber-800/60";
+    if (status === "Andamento")
+      return "bg-sky-900/40 text-sky-400 font-bold hover:bg-sky-800/60";
+    return `bg-transparent font-medium transition-colors ${tema === "dark" ? "text-slate-400 hover:bg-slate-700" : "text-zinc-500 hover:bg-zinc-800"}`;
+  }
 };
 
 const getCorGrupo = (grupoNome) => {
@@ -31,6 +44,7 @@ const LinhaDaTabela = React.memo(
     totalTarefasRequeridas,
     onAtualizarTarefa,
     onAtualizarLinha,
+    tema, // Recebendo o tema do App.jsx
   }) => {
     const [semMovimentos, setSemMovimentos] = useState(false);
 
@@ -46,29 +60,137 @@ const LinhaDaTabela = React.memo(
     const progresso = Math.round(
       (tarefasOkCount / totalTarefasRequeridas) * 100,
     );
-
-    const corFundoLinha = semMovimentos
-      ? "bg-slate-50"
-      : isCompleta
-        ? "bg-green-50"
-        : "bg-white";
-    const corHoverLinha = semMovimentos
-      ? "group-hover:bg-slate-100"
-      : isCompleta
-        ? "group-hover:bg-green-200"
-        : "group-hover:bg-slate-200";
-
     const temCnpj = Boolean(emp.cnpj && emp.cnpj.trim() !== "");
     const temPasta = Boolean(emp.pasta && emp.pasta.trim() !== "");
 
+    // VARIÁVEIS DE TEMA PARA A LINHA
+    const isLight = tema === "light";
+    const isDark = tema === "dark";
+
+    let corFundoLinha = "";
+    let corHoverLinha = "";
+
+    if (semMovimentos) {
+      corFundoLinha = isLight
+        ? "bg-slate-50"
+        : isDark
+          ? "bg-slate-800/50"
+          : "bg-[#0a0a0a]";
+      corHoverLinha = isLight
+        ? "group-hover:bg-slate-100"
+        : isDark
+          ? "group-hover:bg-slate-700/50"
+          : "group-hover:bg-zinc-900/50";
+    } else if (isCompleta) {
+      corFundoLinha = isLight
+        ? "bg-green-50"
+        : isDark
+          ? "bg-emerald-900/10"
+          : "bg-emerald-950/20";
+      corHoverLinha = isLight
+        ? "group-hover:bg-green-200"
+        : isDark
+          ? "group-hover:bg-emerald-900/30"
+          : "group-hover:bg-emerald-900/40";
+    } else {
+      corFundoLinha = isLight
+        ? "bg-white"
+        : isDark
+          ? "bg-slate-800"
+          : "bg-[#0a0a0a]";
+      corHoverLinha = isLight
+        ? "group-hover:bg-slate-200"
+        : isDark
+          ? "group-hover:bg-slate-700"
+          : "group-hover:bg-zinc-900";
+    }
+
+    const borderLinha = isLight
+      ? "border-slate-200"
+      : isDark
+        ? "border-slate-700"
+        : "border-zinc-800";
+    const textEmpresa = isLight ? "text-slate-700" : "text-slate-300";
+    const textUser = isLight ? "text-slate-500" : "text-slate-400";
+    const borderEmpresa = isLight
+      ? "border-slate-300"
+      : isDark
+        ? "border-slate-600"
+        : "border-zinc-700";
+    const outlineEmpresa = isLight
+      ? "outline-slate-200"
+      : isDark
+        ? "outline-slate-700"
+        : "outline-zinc-800";
+
+    const bgProgressoTotal = semMovimentos
+      ? isLight
+        ? "bg-slate-400"
+        : "bg-slate-600"
+      : isCompleta
+        ? isLight
+          ? "bg-green-500"
+          : "bg-emerald-500"
+        : "bg-blue-500";
+    const bgProgressoFundo = isLight
+      ? "bg-slate-200"
+      : isDark
+        ? "bg-slate-700"
+        : "bg-zinc-800";
+
+    const borderCelula = isLight
+      ? "border-slate-200"
+      : isDark
+        ? "border-slate-700/50"
+        : "border-zinc-800/50";
+    const hoverCelula = isLight
+      ? "hover:bg-black/10 hover:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)]"
+      : "hover:bg-white/5 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]";
+
+    const btnAcaoVerde = isLight
+      ? "bg-green-100 text-green-700 hover:bg-green-700 hover:text-white"
+      : "bg-emerald-900/40 text-emerald-400 hover:bg-emerald-600 hover:text-white";
+    const btnAcaoVermelho = isLight
+      ? "bg-red-100 text-red-700 hover:bg-red-700 hover:text-white"
+      : "bg-rose-900/40 text-rose-400 hover:bg-rose-600 hover:text-white";
+
+    const divisorAcao = isLight
+      ? "bg-slate-400"
+      : isDark
+        ? "bg-slate-600"
+        : "bg-zinc-700";
+
+    const btnSemMovHover = semMovimentos
+      ? isLight
+        ? "bg-slate-600 text-white hover:bg-slate-800"
+        : "bg-slate-500 text-white hover:bg-slate-400"
+      : isLight
+        ? "bg-slate-200 text-slate-600 hover:bg-slate-500 hover:text-white"
+        : "bg-slate-700 text-slate-400 hover:bg-slate-500 hover:text-white";
+
+    const btnCopiarDesativado = isLight
+      ? "bg-slate-200 text-slate-400 opacity-60"
+      : "bg-slate-800 text-slate-500 opacity-60";
+    const btnCopiarAtivado = isLight
+      ? "bg-blue-50 text-blue-700 hover:bg-blue-700 hover:text-white"
+      : "bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white";
+    const btnCopiarOkAtivado = isLight
+      ? "bg-green-100 text-green-700 hover:bg-green-700 hover:text-white"
+      : "bg-emerald-900/30 text-emerald-400 hover:bg-emerald-600 hover:text-white";
+
+    const textSemMovimento = isLight
+      ? "text-slate-400 bg-slate-100"
+      : "text-slate-500 bg-slate-800/50";
+
     return (
       <tr
-        className={`border-b border-slate-200 group transition-colors duration-150 ${corFundoLinha} ${corHoverLinha}`}
+        className={`border-b ${borderLinha} group transition-colors duration-150 ${corFundoLinha} ${corHoverLinha}`}
       >
+        {/* FAIXA LATERAL */}
         {isPrimeiraDoGrupo && (
           <td
             rowSpan={rowSpanGrupo}
-            className={`sticky left-0 z-30 w-[26px] min-w-[26px] max-w-[26px] p-0 border-r border-b border-white/20 align-top outline outline-1 outline-slate-300 shadow-sm ${getCorGrupo(grupo)}`}
+            className={`sticky left-0 z-30 w-[26px] min-w-[26px] max-w-[26px] p-0 border-r border-b border-white/20 align-top outline outline-1 ${isLight ? "outline-slate-300" : "outline-slate-800"} shadow-sm ${getCorGrupo(grupo)}`}
           >
             <div className="sticky top-[80px] flex items-center justify-center min-h-[60px] py-6">
               <span
@@ -86,7 +208,7 @@ const LinhaDaTabela = React.memo(
 
         {/* COLUNA DA EMPRESA */}
         <td
-          className={`p-1.5 font-bold text-slate-700 border-r-2 border-slate-300 sticky left-[26px] z-20 outline outline-1 outline-slate-200 shadow-[3px_0_8px_-3px_rgba(0,0,0,0.05)] ${corFundoLinha} ${corHoverLinha}`}
+          className={`p-1.5 font-bold ${textEmpresa} border-r-2 ${borderEmpresa} sticky left-[26px] z-20 outline outline-1 ${outlineEmpresa} shadow-[3px_0_8px_-3px_rgba(0,0,0,0.05)] ${corFundoLinha} ${corHoverLinha}`}
         >
           <div className="flex items-center justify-between gap-1 w-full">
             <div className="flex flex-col w-full gap-0.5 overflow-hidden">
@@ -96,7 +218,7 @@ const LinhaDaTabela = React.memo(
               >
                 {!semMovimentos && isCompleta && (
                   <span
-                    className="text-green-600 text-xs leading-none"
+                    className={`${isLight ? "text-green-600" : "text-emerald-400"} text-xs leading-none`}
                     title="100% Concluído"
                   >
                     ✔
@@ -105,11 +227,11 @@ const LinhaDaTabela = React.memo(
                 {emp.nome}
               </span>
               <div
-                className="w-full bg-slate-200 rounded-full h-1"
+                className={`w-full rounded-full h-1 ${bgProgressoFundo}`}
                 title={`${progresso}% Concluído`}
               >
                 <div
-                  className={`h-1 rounded-full ${semMovimentos ? "bg-slate-400" : isCompleta ? "bg-green-500" : "bg-blue-500"}`}
+                  className={`h-1 rounded-full ${bgProgressoTotal}`}
                   style={{ width: `${semMovimentos ? 100 : progresso}%` }}
                 ></div>
               </div>
@@ -121,29 +243,25 @@ const LinhaDaTabela = React.memo(
                   <>
                     <button
                       onClick={() => onAtualizarLinha(emp.id, "OK")}
-                      className="w-4 h-4 rounded bg-green-100 text-green-700 hover:bg-green-700 hover:text-white flex items-center justify-center text-[10px] cursor-pointer transition-colors"
+                      className={`w-4 h-4 rounded flex items-center justify-center text-[10px] cursor-pointer transition-colors ${btnAcaoVerde}`}
                       title="Preencher tudo com OK"
                     >
                       ✓
                     </button>
                     <button
                       onClick={() => onAtualizarLinha(emp.id, "NAO")}
-                      className="w-4 h-4 rounded bg-red-100 text-red-700 hover:bg-red-700 hover:text-white flex items-center justify-center text-[10px] cursor-pointer transition-colors"
+                      className={`w-4 h-4 rounded flex items-center justify-center text-[10px] cursor-pointer transition-colors ${btnAcaoVermelho}`}
                       title="Preencher tudo com NÃO"
                     >
                       ✕
                     </button>
-                    <div className="w-[1px] h-3 bg-slate-400 mx-0.5"></div>
+                    <div className={`w-[1px] h-3 mx-0.5 ${divisorAcao}`}></div>
                   </>
                 )}
 
                 <button
                   onClick={() => setSemMovimentos(!semMovimentos)}
-                  className={`w-4 h-4 rounded flex items-center justify-center text-[10px] cursor-pointer transition-colors ${
-                    semMovimentos
-                      ? "bg-slate-600 text-white hover:bg-slate-800"
-                      : "bg-slate-200 text-slate-600 hover:bg-slate-500 hover:text-white"
-                  }`}
+                  className={`w-4 h-4 rounded flex items-center justify-center text-[10px] cursor-pointer transition-colors ${btnSemMovHover}`}
                   title={
                     semMovimentos
                       ? "Desmarcar Sem Movimentos"
@@ -166,7 +284,7 @@ const LinhaDaTabela = React.memo(
                   </svg>
                 </button>
 
-                <div className="w-[1px] h-3 bg-slate-400 mx-0.5"></div>
+                <div className={`w-[1px] h-3 mx-0.5 ${divisorAcao}`}></div>
 
                 <button
                   title={
@@ -180,8 +298,10 @@ const LinhaDaTabela = React.memo(
                   disabled={!temCnpj}
                   className={`w-4 h-4 rounded flex items-center justify-center text-[9px] transition-colors ${
                     !temCnpj
-                      ? "bg-slate-200 text-slate-400 cursor-not-allowed opacity-60"
-                      : "bg-blue-50 text-blue-700 hover:bg-blue-700 hover:text-white cursor-pointer"
+                      ? btnCopiarDesativado
+                      : isCompleta
+                        ? btnCopiarOkAtivado
+                        : btnCopiarAtivado
                   }`}
                 >
                   <svg
@@ -212,8 +332,10 @@ const LinhaDaTabela = React.memo(
                   disabled={!temPasta}
                   className={`w-4 h-4 rounded flex items-center justify-center text-[9px] transition-colors ${
                     !temPasta
-                      ? "bg-slate-200 text-slate-400 cursor-not-allowed opacity-60"
-                      : "bg-blue-50 text-blue-700 hover:bg-blue-700 hover:text-white cursor-pointer"
+                      ? btnCopiarDesativado
+                      : isCompleta
+                        ? btnCopiarOkAtivado
+                        : btnCopiarAtivado
                   }`}
                 >
                   <svg
@@ -236,11 +358,11 @@ const LinhaDaTabela = React.memo(
           </div>
         </td>
 
-        {/* RENDERIZAÇÃO CONDICIONAL */}
+        {/* TAREFAS */}
         {semMovimentos ? (
           <td
             colSpan={totalTarefasRequeridas}
-            className="bg-slate-100 text-slate-400 tracking-[0.4em] uppercase font-bold text-[10px] text-center border-r border-slate-200"
+            className={`tracking-[0.4em] uppercase font-bold text-[10px] text-center border-r ${textSemMovimento} ${borderLinha}`}
           >
             <div className="flex items-center justify-center gap-2 opacity-70">
               <svg
@@ -270,33 +392,69 @@ const LinhaDaTabela = React.memo(
                 <td
                   key={`${cat.nome}-${sub}`}
                   title={`${cat.nome}: ${sub} ➔ ${emp.nome}`}
-                  className="p-0.5 border-r border-slate-200 text-center relative z-0 hover:bg-black/10 hover:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] transition-all cursor-crosshair"
+                  className={`p-0.5 border-r ${borderCelula} text-center relative z-0 ${hoverCelula} transition-all cursor-crosshair`}
                 >
                   <select
                     value={info.status}
                     onChange={(e) =>
                       onAtualizarTarefa(emp.id, cat.nome, sub, e.target.value)
                     }
-                    className={`w-full p-0.5 rounded text-[8px] font-bold border-none appearance-none cursor-pointer outline-none focus:ring-1 focus:ring-blue-400 text-center ${getCorStatus(info.status)}`}
+                    // A classe cursor-crosshair agora força a mira até por cima do select
+                    className={`w-full p-0.5 rounded text-[8px] font-bold border-none appearance-none cursor-crosshair outline-none focus:ring-1 focus:ring-blue-400 text-center ${getCorStatus(info.status, tema)}`}
                   >
-                    <option value="Pendente">---</option>
-                    <option value="OK">OK</option>
-                    <option value="NAO">NÃO</option>
-                    <option value="Verificar">VERIF</option>
-                    <option value="Andamento">ANDAM.</option>
+                    <option
+                      value="Pendente"
+                      className={isLight ? "" : "bg-slate-800 text-slate-300"}
+                    >
+                      ---
+                    </option>
+                    <option
+                      value="OK"
+                      className={
+                        isLight ? "" : "bg-emerald-900 text-emerald-400"
+                      }
+                    >
+                      OK
+                    </option>
+                    <option
+                      value="NAO"
+                      className={isLight ? "" : "bg-rose-900 text-rose-400"}
+                    >
+                      NÃO
+                    </option>
+                    <option
+                      value="Verificar"
+                      className={isLight ? "" : "bg-amber-900 text-amber-400"}
+                    >
+                      VERIF
+                    </option>
+                    <option
+                      value="Andamento"
+                      className={isLight ? "" : "bg-sky-900 text-sky-400"}
+                    >
+                      ANDAM.
+                    </option>
                   </select>
 
                   {info.user && info.status !== "Pendente" && (
-                    <div className="mt-0.5 text-[6.5px] text-slate-500 leading-none font-bold uppercase truncate max-w-full">
+                    <div className="mt-0.5 text-[6.5px] leading-none font-bold uppercase truncate max-w-full">
                       <span
                         className={
-                          isCompleta ? "text-green-800/70" : "text-blue-900/70"
+                          isCompleta
+                            ? isLight
+                              ? "text-green-800/70"
+                              : "text-emerald-500/80"
+                            : isLight
+                              ? "text-blue-900/70"
+                              : "text-blue-400/80"
                         }
                       >
                         {info.user.split(" ")[0]}
                       </span>
                       <br />
-                      <span className="text-slate-500 font-medium tracking-tighter">
+                      <span
+                        className={`${textUser} font-medium tracking-tighter opacity-80`}
+                      >
                         {info.data}
                       </span>
                     </div>
@@ -313,7 +471,8 @@ const LinhaDaTabela = React.memo(
     return (
       prevProps.emp === nextProps.emp &&
       prevProps.isPrimeiraDoGrupo === nextProps.isPrimeiraDoGrupo &&
-      prevProps.rowSpanGrupo === nextProps.rowSpanGrupo
+      prevProps.rowSpanGrupo === nextProps.rowSpanGrupo &&
+      prevProps.tema === nextProps.tema // Re-renderiza a linha se o tema mudar
     );
   },
 );
@@ -325,19 +484,16 @@ export function TabelaFiscal({
   totalTarefasRequeridas,
   onAtualizarTarefa,
   onAtualizarLinha,
+  tema = "light",
 }) {
-  // Filtro Inteligente: Pesquisa em múltiplos campos simultaneamente
   const empresasFiltradas = useMemo(() => {
     const termo = filtro.toLowerCase().trim();
-
     if (!termo) return empresas;
-
     return empresas.filter((e) => {
       return (
         e.nome?.toLowerCase().includes(termo) ||
         e.sigla?.toLowerCase().includes(termo) ||
         e.cnpj?.toLowerCase().includes(termo) ||
-        // O grupoNome já contém as informações de UF (RN/PB) e Regime (Simples/Lucro)
         e.grupoNome?.toLowerCase().includes(termo)
       );
     });
@@ -352,19 +508,49 @@ export function TabelaFiscal({
     return contagem;
   }, [empresasFiltradas]);
 
+  // DICIONÁRIOS DO CABEÇALHO DA TABELA
+  const containerEstilos = {
+    light: "border-slate-200 bg-white",
+    dark: "border-slate-700 bg-slate-800",
+    black: "border-zinc-800 bg-[#0a0a0a]",
+  };
+
+  const cabecalhoPrincipalEstilos = {
+    light: "bg-blue-800 text-white border-blue-700/50 outline-blue-800",
+    dark: "bg-slate-900 text-slate-200 border-slate-700 outline-slate-900",
+    black: "bg-black text-slate-300 border-zinc-800 outline-black",
+  };
+
+  const cabecalhoEsqEstilos = {
+    light: "bg-blue-900 outline-blue-900",
+    dark: "bg-slate-950 outline-slate-950",
+    black: "bg-zinc-950 outline-zinc-950",
+  };
+
+  const subCabecalhoEstilos = {
+    light: "bg-gray-200 text-black border-blue-800 border-r-slate-300",
+    dark: "bg-slate-800 text-slate-300 border-slate-900 border-r-slate-700",
+    black: "bg-[#0a0a0a] text-slate-400 border-black border-r-zinc-800",
+  };
+
   return (
-    <main className="max-w-[1920px] w-full h-[calc(100vh-90px)] mx-auto overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl flex flex-col">
-      <div className="overflow-auto flex-1 w-full scrollbar-thin scrollbar-thumb-slate-300">
+    <main
+      className={`max-w-[1920px] w-full h-[calc(100vh-90px)] mx-auto overflow-hidden rounded-xl border shadow-xl flex flex-col transition-colors duration-300 ${containerEstilos[tema]}`}
+    >
+      <div className="overflow-auto flex-1 w-full scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
         <table className="w-full border-collapse table-auto relative">
           <thead>
-            <tr className="bg-blue-800 text-white text-[10px] uppercase tracking-wider sticky top-0 z-40 h-[30px]">
+            {/* CABEÇALHO AZUL/ESCURO */}
+            <tr
+              className={`text-[10px] uppercase tracking-wider sticky top-0 z-40 h-[30px] transition-colors ${cabecalhoPrincipalEstilos[tema]}`}
+            >
               <th
                 rowSpan="2"
-                className="w-[26px] min-w-[26px] max-w-[26px] p-0 bg-blue-900 border-r border-b border-blue-700/50 sticky left-0 top-0 z-50 outline outline-1 outline-blue-900"
+                className={`w-[26px] min-w-[26px] max-w-[26px] p-0 border-r border-b sticky left-0 top-0 z-50 outline outline-1 transition-colors ${cabecalhoEsqEstilos[tema]} border-transparent`}
               ></th>
               <th
                 rowSpan="2"
-                className="p-2 text-left font-bold border-r-2 border-b border-blue-700/50 border-r-blue-900 bg-blue-800 text-white sticky left-[26px] top-0 z-50 w-[18%] outline outline-1 outline-blue-800"
+                className={`p-2 text-left font-bold border-r-2 border-b sticky left-[26px] top-0 z-50 w-[18%] outline outline-1 transition-colors ${cabecalhoPrincipalEstilos[tema]}`}
               >
                 EMPRESAS
               </th>
@@ -372,18 +558,21 @@ export function TabelaFiscal({
                 <th
                   key={cat.nome}
                   colSpan={cat.filhas.length}
-                  className="p-1 text-center border-r border-b border-blue-700/50 leading-tight"
+                  className="p-1 text-center border-r border-b border-inherit leading-tight"
                 >
                   {cat.nome}
                 </th>
               ))}
             </tr>
-            <tr className="bg-gray-200 text-black text-[9px] uppercase font-bold border-b border-blue-800 sticky top-[30px] z-40">
+            {/* SUB-CABEÇALHO */}
+            <tr
+              className={`text-[9px] uppercase font-bold border-b sticky top-[30px] z-40 transition-colors ${subCabecalhoEstilos[tema]}`}
+            >
               {categorias.map((cat) =>
                 cat.filhas.map((f) => (
                   <th
                     key={`${cat.nome}-${f}`}
-                    className="p-0.5 border-r border-slate-300 bg-gray-200 leading-none whitespace-nowrap px-1 shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)]"
+                    className="p-0.5 border-r border-inherit leading-none whitespace-nowrap px-1 shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.05)]"
                   >
                     {f}
                   </th>
@@ -423,6 +612,7 @@ export function TabelaFiscal({
                     totalTarefasRequeridas={totalTarefasRequeridas}
                     onAtualizarTarefa={onAtualizarTarefa}
                     onAtualizarLinha={onAtualizarLinha}
+                    tema={tema} // Repassando o tema para cada linha
                   />
                 );
               })
