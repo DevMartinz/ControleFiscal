@@ -1,22 +1,26 @@
 import React from "react";
-import { mesesDisponiveis } from "../data/constants";
+import { mesesDisponiveis } from "../data/constants"; // Ajuste o caminho se necessário
+import logoSabino from "../assets/sabino.jpeg"; // <-- IMPORTANDO A LOGO
 
 export function Header({
 	usuarioLogado,
+	tema,
+	onCiclarTema,
+	onLogout,
 	periodo,
 	mudarPeriodo,
 	filtro,
 	setFiltro,
 	onAbrirHistorico,
-	onLogout,
-	tema,
-	onCiclarTema,
+	titulo = "SABINO CGE",
+	subtitulo = "Controle Fiscal",
+	iconeEsquerda,
+	children,
 }) {
-	// --- DICIONÁRIOS DE CORES DOS 3 TEMAS ---
 	const headerEstilos = {
 		light: "bg-white border-slate-200",
 		dark: "bg-slate-800 border-slate-700",
-		black: "bg-[#0a0a0a] border-zinc-900", // Preto super profundo
+		black: "bg-[#0a0a0a] border-zinc-900",
 	};
 
 	const textoEstilos = {
@@ -46,7 +50,6 @@ export function Header({
 		black: "text-zinc-500 hover:text-blue-500 hover:bg-zinc-900",
 	};
 
-	// Decide qual ícone mostrar no botão
 	const renderIconeTema = () => {
 		if (tema === "light") {
 			return (
@@ -104,140 +107,147 @@ export function Header({
 		<header
 			className={`${headerEstilos[tema]} border px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row items-center justify-between shadow-sm rounded-xl mb-4 max-w-[1920px] mx-auto w-full gap-4 transition-all duration-300`}
 		>
-			{/* 1. Logo */}
 			<div className="flex items-center gap-3 w-full sm:w-auto">
-				<div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-blue-500 rounded-xl flex items-center justify-center shadow-inner shadow-white/20">
-					<span className="text-white font-black text-xl tracking-tighter">
-						S
-					</span>
-				</div>
+				{iconeEsquerda ? (
+					iconeEsquerda
+				) : (
+					/* AQUI ENTROU A LOGO DA SABINO CGE */
+					<div className="w-10 h-10 flex-shrink-0 bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 flex items-center justify-center">
+						<img
+							src={logoSabino}
+							alt="Logo SABINO CGE"
+							className="w-full h-full object-cover"
+						/>
+					</div>
+				)}
 				<div className="flex flex-col">
 					<h1
 						className={`font-extrabold tracking-tight leading-none text-lg transition-colors ${textoEstilos[tema]}`}
 					>
-						SABINO CGE
+						{titulo}
 					</h1>
 					<span className="text-[9px] text-blue-500 font-bold uppercase tracking-[0.2em] mt-0.5">
-						Controle Fiscal
+						{subtitulo}
 					</span>
 				</div>
 			</div>
 
-			{/* 2. Barra de Pesquisa com Acessibilidade */}
-			<div className="flex-1 w-full max-w-2xl sm:mx-8">
-				<div className="relative group">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth={2.5}
-							d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-						/>
-					</svg>
-					<input
-						type="text"
-						placeholder="Buscar empresa por Nome, CNPJ, Sigla, UF ou Regime..."
-						value={filtro}
-						onChange={(e) => setFiltro(e.target.value)}
-						aria-label="Pesquisar empresas"
-						className={`w-full text-xs sm:text-sm rounded-full pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all font-medium border ${inputEstilos[tema]}`}
-					/>
-				</div>
+			<div className="flex-1 w-full max-w-2xl sm:mx-8 flex justify-center">
+				{children
+					? children
+					: setFiltro !== undefined && (
+							<div className="relative group w-full">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2.5}
+										d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+									/>
+								</svg>
+								<input
+									type="text"
+									placeholder="Buscar empresa por Nome, CNPJ, Sigla, UF ou Regime..."
+									value={filtro}
+									onChange={(e) => setFiltro(e.target.value)}
+									aria-label="Pesquisar empresas"
+									className={`w-full text-xs sm:text-sm rounded-full pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-transparent transition-all font-medium border ${inputEstilos[tema]}`}
+								/>
+							</div>
+						)}
 			</div>
 
-			{/* 3. Controles */}
 			<div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto justify-between sm:justify-end">
-				<div
-					className={`flex items-center gap-1.5 p-1 rounded-lg border transition-colors ${selectBgEstilos[tema]}`}
-				>
-					<select
-						value={periodo.mes}
-						onChange={(e) => mudarPeriodo(periodo.ano, e.target.value)}
-						aria-label="Selecionar Mês"
-						className={`bg-transparent text-xs font-bold outline-none cursor-pointer pl-2 pr-1 appearance-none hover:text-blue-500 transition-colors focus:ring-2 focus:ring-blue-500 rounded ${tema === "light" ? "text-slate-700" : "text-slate-300"}`}
+				{periodo && mudarPeriodo && (
+					<div
+						className={`flex items-center gap-1.5 p-1 rounded-lg border transition-colors ${selectBgEstilos[tema]}`}
 					>
-						{mesesDisponiveis.map((m) => (
+						<select
+							value={periodo.mes}
+							onChange={(e) => mudarPeriodo(periodo.ano, e.target.value)}
+							className={`bg-transparent text-xs font-bold outline-none cursor-pointer pl-2 pr-1 appearance-none hover:text-blue-500 transition-colors focus:ring-2 focus:ring-blue-500 rounded ${tema === "light" ? "text-slate-700" : "text-slate-300"}`}
+						>
+							{mesesDisponiveis?.map((m) => (
+								<option
+									key={m.val}
+									value={m.val}
+									className={tema === "light" ? "" : "bg-slate-800"}
+								>
+									{m.nome}
+								</option>
+							))}
+						</select>
+						<span className="text-slate-500 font-light">/</span>
+						<select
+							value={periodo.ano}
+							onChange={(e) => mudarPeriodo(e.target.value, periodo.mes)}
+							className={`bg-transparent text-xs font-bold outline-none cursor-pointer pr-2 pl-1 appearance-none hover:text-blue-500 transition-colors focus:ring-2 focus:ring-blue-500 rounded ${tema === "light" ? "text-slate-700" : "text-slate-300"}`}
+						>
 							<option
-								key={m.val}
-								value={m.val}
+								value="2026"
 								className={tema === "light" ? "" : "bg-slate-800"}
 							>
-								{m.nome}
+								2026
 							</option>
-						))}
-					</select>
-					<span className="text-slate-500 font-light">/</span>
-					<select
-						value={periodo.ano}
-						onChange={(e) => mudarPeriodo(e.target.value, periodo.mes)}
-						aria-label="Selecionar Ano"
-						className={`bg-transparent text-xs font-bold outline-none cursor-pointer pr-2 pl-1 appearance-none hover:text-blue-500 transition-colors focus:ring-2 focus:ring-blue-500 rounded ${tema === "light" ? "text-slate-700" : "text-slate-300"}`}
-					>
-						<option
-							value="2026"
-							className={tema === "light" ? "" : "bg-slate-800"}
-						>
-							2026
-						</option>
-						<option
-							value="2027"
-							className={tema === "light" ? "" : "bg-slate-800"}
-						>
-							2027
-						</option>
-						<option
-							value="2028"
-							className={tema === "light" ? "" : "bg-slate-800"}
-						>
-							2028
-						</option>
-					</select>
-				</div>
+							<option
+								value="2027"
+								className={tema === "light" ? "" : "bg-slate-800"}
+							>
+								2027
+							</option>
+							<option
+								value="2028"
+								className={tema === "light" ? "" : "bg-slate-800"}
+							>
+								2028
+							</option>
+						</select>
+					</div>
+				)}
 
 				<div
 					className={`hidden sm:block w-[1px] h-8 transition-colors ${tema === "light" ? "bg-slate-200" : "bg-slate-700"}`}
 				></div>
 
-				{/* Botão de Ciclar Temas */}
 				<button
 					onClick={onCiclarTema}
 					className={`p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${btnIconeEstilos[tema]}`}
-					title="Alternar Tema de Cores"
-					aria-label="Alternar tema"
+					title="Alternar Tema"
 				>
 					{renderIconeTema()}
 				</button>
 
-				<button
-					onClick={onAbrirHistorico}
-					className={`relative p-2 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-blue-500 ${btnIconeEstilos[tema]}`}
-					title="Abrir Auditoria Global"
-					aria-label="Abrir auditoria"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						strokeWidth={2}
-						stroke="currentColor"
-						className="w-5 h-5 group-hover:rotate-12 transition-transform"
+				{onAbrirHistorico && (
+					<button
+						onClick={onAbrirHistorico}
+						className={`relative p-2 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-blue-500 ${btnIconeEstilos[tema]}`}
+						title="Abrir Auditoria"
 					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-					<span
-						className={`absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border ${tema === "light" ? "border-white" : "border-slate-800"}`}
-					></span>
-				</button>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							strokeWidth={2}
+							stroke="currentColor"
+							className="w-5 h-5 group-hover:rotate-12 transition-transform"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+							/>
+						</svg>
+						<span
+							className={`absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border ${tema === "light" ? "border-white" : "border-slate-800"}`}
+						></span>
+					</button>
+				)}
 
 				<div className="flex items-center gap-3 pl-1">
 					<div className="text-right hidden md:block">
@@ -249,7 +259,6 @@ export function Header({
 						<button
 							onClick={onLogout}
 							className="text-[9px] text-slate-500 hover:text-rose-500 font-bold uppercase tracking-widest mt-1 transition-colors focus:outline-none"
-							aria-label="Sair da conta"
 						>
 							Sair da Conta
 						</button>
