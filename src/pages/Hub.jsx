@@ -424,6 +424,57 @@ export function Hub({ tema, setTema }) {
 							</p>
 						</div>
 					</button>
+
+					{/* RECEBIMENTOS - Amarelo */}
+					<button
+						onClick={() => navigate("/recebimentos")}
+						className={`group text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1.5 ${estilos.card}`}
+					>
+						<div className="flex items-start justify-between w-full">
+							<div className="w-14 h-14 bg-yellow-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg shadow-yellow-500/30">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									strokeWidth={1.5}
+									stroke="currentColor"
+									className="w-7 h-7"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M19.5 21a3 3 0 003-3v-4.5a3 3 0 00-3-3h-15a3 3 0 00-3 3V18a3 3 0 003 3h15zM1.5 10.146V6a3 3 0 013-3h5.379a2.25 2.25 0 011.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 013 3v1.146A4.483 4.483 0 0019.5 9h-15a4.483 4.483 0 00-3 1.146z"
+									/>
+								</svg>
+							</div>
+							<div className="p-2.5 bg-yellow-50 text-yellow-500 rounded-full transition-all duration-300 group-hover:bg-yellow-500 group-hover:text-white dark:bg-yellow-500/10 dark:text-yellow-400 dark:group-hover:bg-yellow-500 dark:group-hover:text-white relative z-20">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									strokeWidth={2.5}
+									stroke="currentColor"
+									className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
+									/>
+								</svg>
+							</div>
+						</div>
+						<div>
+							<h3 className={`text-xl font-black ${estilos.texto}`}>
+								Recepção de Arquivos
+							</h3>
+							<p
+								className={`text-sm mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+							>
+								Controle mensal de recebimentos de XML e SPED.
+							</p>
+						</div>
+					</button>
 				</div>
 			</main>
 		</div>

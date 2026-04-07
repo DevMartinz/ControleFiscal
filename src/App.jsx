@@ -9,6 +9,7 @@ import { Fiscal } from "./pages/Fiscal";
 import { Empresas } from "./pages/Empresas";
 import { TI } from "./pages/TI";
 import { Calendario } from "./pages/Calendario";
+import { Recebimentos } from "./pages/Recebimentos"; // Verifique se a pasta está correta
 
 // --- CONFIGURAÇÃO DE ACESSOS ---
 const ADMINS_TI = ["Bruno M"];
@@ -212,6 +213,14 @@ export default function App() {
 						element={
 							<RotaProtegida>
 								<Calendario tema={tema} setTema={setTema} />
+							</RotaProtegida>
+						}
+					/>
+					<Route
+						path="/recebimentos"
+						element={
+							<RotaProtegida>
+								<Recebimentos tema={tema} setTema={setTema} />
 							</RotaProtegida>
 						}
 					/>
