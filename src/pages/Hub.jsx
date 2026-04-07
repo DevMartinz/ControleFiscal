@@ -18,32 +18,32 @@ export function Hub({ tema, setTema }) {
 	};
 
 	const estilos = {
-		// Fundo com gradiente cinza claro suave
+		// Fundo
 		fundo:
 			tema === "light"
 				? "bg-gradient-to-br from-slate-50 to-slate-200"
 				: tema === "dark"
 					? "bg-gradient-to-br from-slate-800 to-slate-900"
-					: "bg-gradient-to-br from-[#111] to-black",
+					: "bg-gradient-to-br from-[#050505] to-[#111]",
 
 		texto: tema === "light" ? "text-slate-800" : "text-slate-100",
 		textoSecundario: tema === "light" ? "text-slate-500" : "text-slate-400",
 
-		// Cards Glassmorphism
-		card:
+		// Base Glassmorphism Aprimorada (Sombra e Borda dinâmica por card)
+		cardBase:
 			tema === "light"
-				? "bg-white/90 backdrop-blur-md border-white/60 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-500/10 hover:bg-white"
+				? "bg-white/80 backdrop-blur-xl border-white hover:bg-white"
 				: tema === "dark"
-					? "bg-slate-800/80 backdrop-blur-md border-slate-700/50 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:bg-slate-800/95"
-					: "bg-[#0a0a0a]/80 backdrop-blur-md border-zinc-800/50 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 hover:bg-[#111]",
+					? "bg-slate-800/70 backdrop-blur-xl border-slate-700/50 hover:bg-slate-800/90"
+					: "bg-[#0f0f0f]/80 backdrop-blur-xl border-zinc-800/60 hover:bg-[#1a1a1a]",
 
 		// Banner
 		banner:
 			tema === "light"
-				? "bg-gradient-to-r from-blue-600/95 to-indigo-600/95 backdrop-blur-md text-white shadow-lg shadow-blue-500/20 border border-white/20"
+				? "bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white shadow-xl shadow-blue-500/20 border border-white/20"
 				: tema === "dark"
-					? "bg-gradient-to-r from-blue-900/80 to-indigo-900/80 backdrop-blur-md border border-blue-800/50 text-blue-50 shadow-lg shadow-blue-900/20"
-					: "bg-gradient-to-r from-zinc-900/90 to-black/90 backdrop-blur-md border border-zinc-800/50 text-zinc-100",
+					? "bg-gradient-to-r from-blue-900/90 to-indigo-900/90 backdrop-blur-md border border-blue-700/30 text-blue-50 shadow-xl shadow-blue-900/30"
+					: "bg-gradient-to-r from-zinc-900 to-black backdrop-blur-md border border-zinc-800 text-zinc-100",
 	};
 
 	const dataAtual = new Intl.DateTimeFormat("pt-BR", {
@@ -79,19 +79,20 @@ export function Hub({ tema, setTema }) {
 			</div>
 
 			<main className="flex-1 p-4 md:px-8 md:py-6 max-w-6xl mx-auto w-full z-10 flex flex-col gap-6 relative">
-				{/* Banner */}
+				{/* BANNER PREMIUM */}
 				<div
-					className={`px-6 py-5 md:px-8 md:py-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 overflow-hidden relative ${estilos.banner}`}
+					className={`px-6 py-5 md:px-8 md:py-7 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-4 overflow-hidden relative ${estilos.banner}`}
 				>
-					<div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+					<div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50"></div>
+					<div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
 
 					<div className="relative z-10 w-full text-center md:text-left">
 						<p
-							className={`text-[10px] font-bold tracking-widest uppercase mb-1.5 ${tema === "light" ? "text-blue-200" : "text-blue-400"}`}
+							className={`text-[10px] font-black tracking-widest uppercase mb-2 ${tema === "light" ? "text-blue-200" : "text-blue-400"}`}
 						>
 							{dataAtual}
 						</p>
-						<h2 className="text-2xl md:text-3xl font-black tracking-tight mb-1">
+						<h2 className="text-3xl md:text-4xl font-black tracking-tight mb-2">
 							Olá, {usuarioLogado}!
 						</h2>
 						<p
@@ -101,14 +102,14 @@ export function Hub({ tema, setTema }) {
 						</p>
 					</div>
 
-					<div className="relative z-10 hidden md:flex shrink-0 items-center justify-center p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+					<div className="relative z-10 hidden md:flex shrink-0 items-center justify-center p-4 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 shadow-inner">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
 							strokeWidth={1.5}
 							stroke="currentColor"
-							className="w-8 h-8"
+							className="w-10 h-10"
 						>
 							<path
 								strokeLinecap="round"
@@ -119,15 +120,16 @@ export function Hub({ tema, setTema }) {
 					</div>
 				</div>
 
-				{/* Grid de Módulos */}
+				{/* GRID DE MÓDULOS */}
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-2 relative">
 					{/* FISCAL - Azul */}
 					<button
 						onClick={() => navigate("/fiscal")}
-						className={`group text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1.5 ${estilos.card}`}
+						className={`group relative text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1 hover:scale-[1.01] hover:border-blue-400/60 hover:shadow-2xl hover:shadow-blue-500/15 ${estilos.cardBase}`}
 					>
-						<div className="flex items-start justify-between w-full">
-							<div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg shadow-blue-500/30">
+						<div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-[2rem] transition-opacity pointer-events-none"></div>
+						<div className="flex items-start justify-between w-full relative z-10">
+							<div className="w-14 h-14 bg-blue-600 text-white rounded-[1.2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg shadow-blue-500/30">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -143,7 +145,7 @@ export function Hub({ tema, setTema }) {
 									/>
 								</svg>
 							</div>
-							<div className="p-2.5 bg-blue-50 text-blue-500 rounded-full transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-500/10 dark:text-blue-400 dark:group-hover:bg-blue-600 dark:group-hover:text-white relative z-20">
+							<div className="p-2.5 bg-blue-50 text-blue-500 rounded-full transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-500/10 dark:text-blue-400 dark:group-hover:bg-blue-600 dark:group-hover:text-white">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -160,12 +162,14 @@ export function Hub({ tema, setTema }) {
 								</svg>
 							</div>
 						</div>
-						<div>
-							<h3 className={`text-xl font-black ${estilos.texto}`}>
+						<div className="relative z-10">
+							<h3
+								className={`text-xl font-black tracking-tight ${estilos.texto}`}
+							>
 								Setor Fiscal
 							</h3>
 							<p
-								className={`text-sm mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+								className={`text-[13px] mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
 							>
 								Apurações, fechamentos mensais, Sped e notas fiscais.
 							</p>
@@ -174,10 +178,11 @@ export function Hub({ tema, setTema }) {
 
 					{/* PESSOAL - Verde */}
 					<button
-						className={`group text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1.5 ${estilos.card}`}
+						className={`group relative text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1 hover:scale-[1.01] hover:border-emerald-400/60 hover:shadow-2xl hover:shadow-emerald-500/15 ${estilos.cardBase}`}
 					>
-						<div className="flex items-start justify-between w-full">
-							<div className="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg shadow-emerald-500/30">
+						<div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-[2rem] transition-opacity pointer-events-none"></div>
+						<div className="flex items-start justify-between w-full relative z-10">
+							<div className="w-14 h-14 bg-emerald-500 text-white rounded-[1.2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg shadow-emerald-500/30">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -193,7 +198,7 @@ export function Hub({ tema, setTema }) {
 									/>
 								</svg>
 							</div>
-							<div className="p-2.5 bg-emerald-50 text-emerald-500 rounded-full transition-all duration-300 group-hover:bg-emerald-500 group-hover:text-white dark:bg-emerald-500/10 dark:text-emerald-400 dark:group-hover:bg-emerald-500 dark:group-hover:text-white relative z-20">
+							<div className="p-2.5 bg-emerald-50 text-emerald-500 rounded-full transition-all duration-300 group-hover:bg-emerald-500 group-hover:text-white dark:bg-emerald-500/10 dark:text-emerald-400 dark:group-hover:bg-emerald-500 dark:group-hover:text-white">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -210,12 +215,14 @@ export function Hub({ tema, setTema }) {
 								</svg>
 							</div>
 						</div>
-						<div>
-							<h3 className={`text-xl font-black ${estilos.texto}`}>
+						<div className="relative z-10">
+							<h3
+								className={`text-xl font-black tracking-tight ${estilos.texto}`}
+							>
 								Setor Pessoal
 							</h3>
 							<p
-								className={`text-sm mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+								className={`text-[13px] mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
 							>
 								Folha de pagamento, férias, rescisões e eSocial.
 							</p>
@@ -224,10 +231,11 @@ export function Hub({ tema, setTema }) {
 
 					{/* CONTÁBIL - Roxo */}
 					<button
-						className={`group text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1.5 ${estilos.card}`}
+						className={`group relative text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1 hover:scale-[1.01] hover:border-purple-400/60 hover:shadow-2xl hover:shadow-purple-500/15 ${estilos.cardBase}`}
 					>
-						<div className="flex items-start justify-between w-full">
-							<div className="w-14 h-14 bg-purple-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg shadow-purple-500/30">
+						<div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-[2rem] transition-opacity pointer-events-none"></div>
+						<div className="flex items-start justify-between w-full relative z-10">
+							<div className="w-14 h-14 bg-purple-500 text-white rounded-[1.2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg shadow-purple-500/30">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -243,7 +251,7 @@ export function Hub({ tema, setTema }) {
 									/>
 								</svg>
 							</div>
-							<div className="p-2.5 bg-purple-50 text-purple-500 rounded-full transition-all duration-300 group-hover:bg-purple-500 group-hover:text-white dark:bg-purple-500/10 dark:text-purple-400 dark:group-hover:bg-purple-500 dark:group-hover:text-white relative z-20">
+							<div className="p-2.5 bg-purple-50 text-purple-500 rounded-full transition-all duration-300 group-hover:bg-purple-500 group-hover:text-white dark:bg-purple-500/10 dark:text-purple-400 dark:group-hover:bg-purple-500 dark:group-hover:text-white">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -260,25 +268,28 @@ export function Hub({ tema, setTema }) {
 								</svg>
 							</div>
 						</div>
-						<div>
-							<h3 className={`text-xl font-black ${estilos.texto}`}>
+						<div className="relative z-10">
+							<h3
+								className={`text-xl font-black tracking-tight ${estilos.texto}`}
+							>
 								Setor Contábil
 							</h3>
 							<p
-								className={`text-sm mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+								className={`text-[13px] mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
 							>
 								Balancetes, DRE, conciliação e demonstrações.
 							</p>
 						</div>
 					</button>
 
-					{/* EMPRESAS - Laranja */}
+					{/* EMPRESAS - Amber */}
 					<button
 						onClick={() => navigate("/empresas")}
-						className={`group text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1.5 ${estilos.card}`}
+						className={`group relative text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1 hover:scale-[1.01] hover:border-amber-400/60 hover:shadow-2xl hover:shadow-amber-500/15 ${estilos.cardBase}`}
 					>
-						<div className="flex items-start justify-between w-full">
-							<div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg shadow-amber-500/30">
+						<div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-[2rem] transition-opacity pointer-events-none"></div>
+						<div className="flex items-start justify-between w-full relative z-10">
+							<div className="w-14 h-14 bg-amber-500 text-white rounded-[1.2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg shadow-amber-500/30">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -294,7 +305,7 @@ export function Hub({ tema, setTema }) {
 									/>
 								</svg>
 							</div>
-							<div className="p-2.5 bg-amber-50 text-amber-500 rounded-full transition-all duration-300 group-hover:bg-amber-500 group-hover:text-white dark:bg-amber-500/10 dark:text-amber-400 dark:group-hover:bg-amber-500 dark:group-hover:text-white relative z-20">
+							<div className="p-2.5 bg-amber-50 text-amber-500 rounded-full transition-all duration-300 group-hover:bg-amber-500 group-hover:text-white dark:bg-amber-500/10 dark:text-amber-400 dark:group-hover:bg-amber-500 dark:group-hover:text-white">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -311,12 +322,14 @@ export function Hub({ tema, setTema }) {
 								</svg>
 							</div>
 						</div>
-						<div>
-							<h3 className={`text-xl font-black ${estilos.texto}`}>
+						<div className="relative z-10">
+							<h3
+								className={`text-xl font-black tracking-tight ${estilos.texto}`}
+							>
 								Lista de Empresas
 							</h3>
 							<p
-								className={`text-sm mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+								className={`text-[13px] mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
 							>
 								Lista de nossos clientes e empresas.
 							</p>
@@ -326,10 +339,11 @@ export function Hub({ tema, setTema }) {
 					{/* T.I - Vermelho */}
 					<button
 						onClick={() => navigate("/ti")}
-						className={`group text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1.5 ${estilos.card}`}
+						className={`group relative text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1 hover:scale-[1.01] hover:border-rose-400/60 hover:shadow-2xl hover:shadow-rose-500/15 ${estilos.cardBase}`}
 					>
-						<div className="flex items-start justify-between w-full">
-							<div className="w-14 h-14 bg-rose-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg shadow-rose-500/30">
+						<div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-[2rem] transition-opacity pointer-events-none"></div>
+						<div className="flex items-start justify-between w-full relative z-10">
+							<div className="w-14 h-14 bg-rose-500 text-white rounded-[1.2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg shadow-rose-500/30">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -345,7 +359,7 @@ export function Hub({ tema, setTema }) {
 									/>
 								</svg>
 							</div>
-							<div className="p-2.5 bg-rose-50 text-rose-500 rounded-full transition-all duration-300 group-hover:bg-rose-500 group-hover:text-white dark:bg-rose-500/10 dark:text-rose-400 dark:group-hover:bg-rose-500 dark:group-hover:text-white relative z-20">
+							<div className="p-2.5 bg-rose-50 text-rose-500 rounded-full transition-all duration-300 group-hover:bg-rose-500 group-hover:text-white dark:bg-rose-500/10 dark:text-rose-400 dark:group-hover:bg-rose-500 dark:group-hover:text-white">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -362,12 +376,14 @@ export function Hub({ tema, setTema }) {
 								</svg>
 							</div>
 						</div>
-						<div>
-							<h3 className={`text-xl font-black ${estilos.texto}`}>
+						<div className="relative z-10">
+							<h3
+								className={`text-xl font-black tracking-tight ${estilos.texto}`}
+							>
 								Chamados
 							</h3>
 							<p
-								className={`text-sm mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+								className={`text-[13px] mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
 							>
 								Abrir e Exibir Chamados de T.I
 							</p>
@@ -377,10 +393,11 @@ export function Hub({ tema, setTema }) {
 					{/* CALENDÁRIO - Ciano */}
 					<button
 						onClick={() => navigate("/calendario")}
-						className={`group text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1.5 ${estilos.card}`}
+						className={`group relative text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1 hover:scale-[1.01] hover:border-cyan-400/60 hover:shadow-2xl hover:shadow-cyan-500/15 ${estilos.cardBase}`}
 					>
-						<div className="flex items-start justify-between w-full">
-							<div className="w-14 h-14 bg-cyan-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg shadow-cyan-500/30">
+						<div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-[2rem] transition-opacity pointer-events-none"></div>
+						<div className="flex items-start justify-between w-full relative z-10">
+							<div className="w-14 h-14 bg-cyan-500 text-white rounded-[1.2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg shadow-cyan-500/30">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -396,7 +413,7 @@ export function Hub({ tema, setTema }) {
 									/>
 								</svg>
 							</div>
-							<div className="p-2.5 bg-cyan-50 text-cyan-500 rounded-full transition-all duration-300 group-hover:bg-cyan-500 group-hover:text-white dark:bg-cyan-500/10 dark:text-cyan-400 dark:group-hover:bg-cyan-500 dark:group-hover:text-white relative z-20">
+							<div className="p-2.5 bg-cyan-50 text-cyan-500 rounded-full transition-all duration-300 group-hover:bg-cyan-500 group-hover:text-white dark:bg-cyan-500/10 dark:text-cyan-400 dark:group-hover:bg-cyan-500 dark:group-hover:text-white">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -413,25 +430,28 @@ export function Hub({ tema, setTema }) {
 								</svg>
 							</div>
 						</div>
-						<div>
-							<h3 className={`text-xl font-black ${estilos.texto}`}>
+						<div className="relative z-10">
+							<h3
+								className={`text-xl font-black tracking-tight ${estilos.texto}`}
+							>
 								Calendário
 							</h3>
 							<p
-								className={`text-sm mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+								className={`text-[13px] mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
 							>
 								Feriados nacionais, municipais e datas importantes.
 							</p>
 						</div>
 					</button>
 
-					{/* RECEBIMENTOS - Amarelo */}
+					{/* RECEBIMENTOS - Laranja Aprimorado (Substituiu o Amarelo Vibrante) */}
 					<button
 						onClick={() => navigate("/recebimentos")}
-						className={`group text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1.5 ${estilos.card}`}
+						className={`group relative text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1 hover:scale-[1.01] hover:border-orange-400/60 hover:shadow-2xl hover:shadow-orange-500/15 ${estilos.cardBase}`}
 					>
-						<div className="flex items-start justify-between w-full">
-							<div className="w-14 h-14 bg-yellow-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg shadow-yellow-500/30">
+						<div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-[2rem] transition-opacity pointer-events-none"></div>
+						<div className="flex items-start justify-between w-full relative z-10">
+							<div className="w-14 h-14 bg-orange-500 text-white rounded-[1.2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg shadow-orange-500/30">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -447,7 +467,7 @@ export function Hub({ tema, setTema }) {
 									/>
 								</svg>
 							</div>
-							<div className="p-2.5 bg-yellow-50 text-yellow-500 rounded-full transition-all duration-300 group-hover:bg-yellow-500 group-hover:text-white dark:bg-yellow-500/10 dark:text-yellow-400 dark:group-hover:bg-yellow-500 dark:group-hover:text-white relative z-20">
+							<div className="p-2.5 bg-orange-50 text-orange-500 rounded-full transition-all duration-300 group-hover:bg-orange-500 group-hover:text-white dark:bg-orange-500/10 dark:text-orange-400 dark:group-hover:bg-orange-500 dark:group-hover:text-white">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -464,14 +484,71 @@ export function Hub({ tema, setTema }) {
 								</svg>
 							</div>
 						</div>
-						<div>
-							<h3 className={`text-xl font-black ${estilos.texto}`}>
+						<div className="relative z-10">
+							<h3
+								className={`text-xl font-black tracking-tight ${estilos.texto}`}
+							>
 								Recepção de Arquivos
 							</h3>
 							<p
-								className={`text-sm mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+								className={`text-[13px] mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
 							>
 								Controle mensal de recebimentos de XML e SPED.
+							</p>
+						</div>
+					</button>
+
+					{/* SALA DE REUNIÃO - Indigo e Ícone Sofá */}
+					<button
+						onClick={() => navigate("/salaReuniao")}
+						className={`group relative text-left p-6 md:p-7 rounded-[2rem] border transition-all duration-300 flex flex-col gap-5 hover:-translate-y-1 hover:scale-[1.01] hover:border-indigo-400/60 hover:shadow-2xl hover:shadow-indigo-500/15 ${estilos.cardBase}`}
+					>
+						<div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-[2rem] transition-opacity pointer-events-none"></div>
+						<div className="flex items-start justify-between w-full relative z-10">
+							<div className="w-14 h-14 bg-indigo-500 text-white rounded-[1.2rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg shadow-indigo-500/30">
+								{/* NOVO ÍCONE: SOFÁ */}
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									strokeWidth={1.5}
+									stroke="currentColor"
+									className="w-7 h-7"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M3.75 10.5h16.5m-16.5 0V15a2.25 2.25 0 002.25 2.25h12A2.25 2.25 0 0020.25 15v-4.5m-16.5 0v-2.625c0-1.036.84-1.875 1.875-1.875h12.75c1.035 0 1.875.84 1.875 1.875v2.625M5.25 17.25v2.25m13.5-2.25v2.25"
+									/>
+								</svg>
+							</div>
+							<div className="p-2.5 bg-indigo-50 text-indigo-500 rounded-full transition-all duration-300 group-hover:bg-indigo-500 group-hover:text-white dark:bg-indigo-500/10 dark:text-indigo-400 dark:group-hover:bg-indigo-500 dark:group-hover:text-white">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									strokeWidth={2.5}
+									stroke="currentColor"
+									className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
+									/>
+								</svg>
+							</div>
+						</div>
+						<div className="relative z-10">
+							<h3
+								className={`text-xl font-black tracking-tight ${estilos.texto}`}
+							>
+								Sala de Reunião
+							</h3>
+							<p
+								className={`text-[13px] mt-1.5 leading-relaxed font-medium ${estilos.textoSecundario}`}
+							>
+								Agende horários e consulte a disponibilidade.
 							</p>
 						</div>
 					</button>

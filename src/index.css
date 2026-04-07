@@ -2,10 +2,10 @@
 
 /* Definindo a paleta de cores Navy #011640 */
 @theme {
-  --color-blue-50: #e6f0ff;
-  --color-blue-100: #ccdf80; /* Para os badges de status */
-  --color-blue-600: #004dc7; /* Azul de ação um pouco mais vivo */
-  --color-blue-800: #022c7d; /* Sub-cabeçalhos */
-  --color-blue-900: #011640; /* O  AZUL NOVO (Cabeçalho Principal) */
-  --color-blue-950: #000c24; /* Fundo do sticky da empresa */
+	--color-blue-50: #e6f0ff;
+	--color-blue-100: #cce0ff; /* CORRIGIDO: Agora é um azul bebê bem suave e corporativo */
+	--color-blue-600: #004dc7; /* Azul de ação um pouco mais vivo */
+	--color-blue-800: #022c7d; /* Sub-cabeçalhos */
+	--color-blue-900: #011640; /* O AZUL NOVO (Cabeçalho Principal) */
+	--color-blue-950: #000c24; /* Fundo do sticky da empresa */
 }
